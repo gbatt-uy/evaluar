@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#faf8f5">
+<title>Evaluar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --surface-alt: #f5f1ea;
+    --border: #e8e2d6;
+    --text: #1c1917;
+    --text-soft: #57534e;
+    --text-mute: #a8a29e;
+    --accent: #7c3aed;
+    --accent-soft: #ede9fe;
+    --logrado: #10b981;
+    --proceso: #f59e0b;
+    --apoyo: #ef4444;
+    --noeval: #9ca3af;
+    --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
+    --shadow: 0 4px 16px rgba(28, 25, 23, 0.06);
+    --shadow-lg: 0 12px 32px rgba(28, 25, 23, 0.08);
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
+  }
+  body { min-height: 100vh; min-height: 100dvh; }
+  #app { max-width: 560px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; position: relative; }
+  button { font-family: inherit; font-size: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+  input:focus, textarea:focus, button:focus { outline: none; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .screen { display: flex; flex-direction: column; flex: 1; padding: 24px 20px 32px; animation: fadeIn .25s ease; }
+  .screen.slide-in-right { animation: slideInRight .28s ease; }
+  .screen.slide-in-left { animation: slideInLeft .28s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInLeft { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 24px; min-height: 56px; }
+  .topbar .back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-weight: 500; font-size: 15px; padding: 8px 10px 8px 4px; border-radius: 10px; min-height: 44px; }
+  .topbar .back:active { background: var(--surface-alt); }
+  .topbar .title { font-size: 15px; font-weight: 600; color: var(--text-soft); }
+  .topbar .spacer { width: 60px; }
+
+  .h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px; }
+  .h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin-bottom: 6px; }
+  .h3 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .lead { color: var(--text-soft); font-size: 15px; margin-bottom: 24px; }
+  .muted { color: var(--text-mute); font-size: 14px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-sm); }
+  .card + .card { margin-top: 12px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 18px; border-radius: 14px; font-weight: 600; min-height: 52px; transition: transform .08s ease, background .15s ease, box-shadow .15s ease; width: 100%; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--text); color: white; box-shadow: var(--shadow); }
+  .btn-primary:active { background: #0a0908; }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:active { background: var(--surface-alt); }
+  .btn-ghost { background: transparent; color: var(--text-soft); }
+  .btn-ghost:active { background: var(--surface-alt); }
+  .btn-lg { font-size: 17px; min-height: 60px; padding: 18px; border-radius: 16px; }
+  .btn[disabled] { opacity: 0.5; pointer-events: none; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .field label { font-size: 13px; font-weight: 500; color: var(--text-soft); }
+  .input { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; font-size: 16px; width: 100%; min-height: 52px; transition: border-color .15s ease; }
+  .input:focus { border-color: var(--text); }
+  .input.center { text-align: center; letter-spacing: 0.5em; font-size: 22px; font-weight: 600; }
+
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .list-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; min-height: 60px; transition: background .12s ease, border-color .12s ease; text-align: left; width: 100%; }
+  .list-item:active { background: var(--surface-alt); }
+  .list-item.active { border-color: var(--text); background: var(--text); color: white; }
+  .list-item .arrow { color: var(--text-mute); font-size: 18px; }
+  .list-item.active .arrow { color: rgba(255,255,255,0.7); }
+  .list-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .list-item-title { font-weight: 600; font-size: 15px; }
+  .list-item-meta { font-size: 13px; color: var(--text-mute); }
+  .list-item.active .list-item-meta { color: rgba(255,255,255,0.7); }
+
+  .home-hero { padding: 32px 4px 28px; }
+  .home-hero .greeting { color: var(--text-soft); font-size: 15px; margin-bottom: 4px; }
+  .home-cta { margin-bottom: 14px; }
+  .home-cta .btn-primary { padding: 24px; min-height: 88px; font-size: 19px; border-radius: 20px; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .home-cta .btn-primary .sub { font-size: 13px; font-weight: 400; opacity: 0.7; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+  .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .stat-label { font-size: 12px; color: var(--text-mute); margin-top: 2px; font-weight: 500; }
+
+  .progress-wrap { padding: 4px 0 18px; }
+  .progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--text-soft); font-weight: 500; }
+  .progress-bar { height: 6px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--text); border-radius: 3px; transition: width .3s ease; }
+
+  .student-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 24px; margin-bottom: 20px; }
+  .student-name { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  .student-meta { font-size: 13px; color: var(--text-mute); margin-top: 6px; font-weight: 500; }
+
+  .valoracion-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .val-btn { display: flex; align-items: center; gap: 14px; padding: 18px 18px; border-radius: 14px; background: var(--surface); border: 1.5px solid var(--border); min-height: 60px; text-align: left; transition: transform .08s ease, background .15s ease, border-color .15s ease; font-weight: 600; font-size: 16px; }
+  .val-btn:active { transform: scale(0.985); }
+  .val-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+  .val-btn[data-val="logrado"] .val-dot { background: var(--logrado); }
+  .val-btn[data-val="proceso"] .val-dot { background: var(--proceso); }
+  .val-btn[data-val="apoyo"] .val-dot { background: var(--apoyo); }
+  .val-btn[data-val="noeval"] .val-dot { background: var(--noeval); }
+  .val-btn.selected[data-val="logrado"] { background: var(--logrado); border-color: var(--logrado); color: white; }
+  .val-btn.selected[data-val="proceso"] { background: var(--proceso); border-color: var(--proceso); color: white; }
+  .val-btn.selected[data-val="apoyo"] { background: var(--apoyo); border-color: var(--apoyo); color: white; }
+  .val-btn.selected[data-val="noeval"] { background: var(--noeval); border-color: var(--noeval); color: white; }
+  .val-btn.selected .val-dot { background: white; }
+
+  .obs-section { margin-top: 4px; margin-bottom: 18px; }
+  .obs-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; font-weight: 500; color: var(--text-soft); font-size: 14px; min-height: 48px; }
+  .obs-toggle:active { background: var(--surface-alt); }
+  .obs-toggle.has-content { color: var(--text); }
+  .obs-toggle .chev { transition: transform .2s ease; font-size: 12px; color: var(--text-mute); }
+  .obs-toggle.open .chev { transform: rotate(180deg); }
+  .obs-body { max-height: 0; overflow: hidden; transition: max-height .25s ease, margin-top .25s ease; }
+  .obs-body.open { max-height: 240px; margin-top: 10px; }
+  textarea.input { resize: none; min-height: 100px; line-height: 1.5; }
+
+  .nav-row { display: flex; gap: 10px; margin-top: auto; padding-top: 16px; }
+  .nav-row .btn { flex: 1; }
+
+  .indicator-pill { display: inline-block; padding: 6px 12px; background: var(--accent-soft); color: var(--accent); border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+
+  .distribution { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+  .distribution h3 { margin-bottom: 14px; }
+  .dist-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dist-row:last-child { margin-bottom: 0; }
+  .dist-label { display: flex; align-items: center; gap: 8px; min-width: 130px; font-size: 14px; font-weight: 500; }
+  .dist-label .val-dot { width: 12px; height: 12px; }
+  .dist-bar-track { flex: 1; height: 8px; background: var(--surface-alt); border-radius: 4px; overflow: hidden; }
+  .dist-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .dist-bar-fill.logrado { background: var(--logrado); }
+  .dist-bar-fill.proceso { background: var(--proceso); }
+  .dist-bar-fill.apoyo { background: var(--apoyo); }
+  .dist-bar-fill.noeval { background: var(--noeval); }
+  .dist-count { font-size: 14px; font-weight: 600; min-width: 24px; text-align: right; }
+
+  .obs-list { display: flex; flex-direction: column; gap: 10px; }
+  .obs-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+  .obs-item-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .obs-item-text { font-size: 14px; color: var(--text-soft); line-height: 1.45; }
+
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-chip { padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--text-soft); white-space: nowrap; flex-shrink: 0; min-height: 40px; }
+  .filter-chip:active { background: var(--surface-alt); }
+  .filter-chip.active { background: var(--text); color: white; border-color: var(--text); }
+
+  .empty { text-align: center; padding: 48px 20px; color: var(--text-mute); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.6; }
+  .empty-title { font-size: 15px; font-weight: 600; color: var(--text-soft); margin-bottom: 4px; }
+  .empty-text { font-size: 13px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: white; padding: 12px 20px; border-radius: 999px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease; z-index: 100; box-shadow: var(--shadow-lg); white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .loading { display: flex; align-items: center; justify-content: center; flex: 1; color: var(--text-mute); }
+  .spinner { width: 22px; height: 22px; border: 2.5px solid var(--surface-alt); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .indicator-list { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 280px); max-height: calc(100dvh - 280px); overflow-y: auto; padding: 2px; -webkit-overflow-scrolling: touch; }
+  .indicator-list::-webkit-scrollbar { width: 4px; }
+  .indicator-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .indicator-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: left; transition: background .12s ease, border-color .12s ease; min-height: 56px; display: flex; align-items: center; gap: 12px; }
+  .indicator-item:active { background: var(--surface-alt); }
+  .indicator-item.selected { border-color: var(--text); background: var(--text); color: white; }
+  .indicator-num { font-size: 12px; font-weight: 700; color: var(--text-mute); min-width: 22px; }
+  .indicator-item.selected .indicator-num { color: rgba(255,255,255,0.7); }
+  .indicator-text { font-size: 14px; font-weight: 500; line-height: 1.35; }
+
+  .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: left; width: 100%; transition: background .12s ease; }
+  .history-item:active { background: var(--surface-alt); }
+  .history-date { font-size: 12px; color: var(--text-mute); font-weight: 500; margin-bottom: 4px; }
+  .history-indicator { font-size: 14px; font-weight: 600; line-height: 1.35; margin-bottom: 8px; }
+  .history-stats { display: flex; gap: 12px; font-size: 12px; color: var(--text-soft); }
+  .history-stat { display: inline-flex; align-items: center; gap: 4px; }
+  .history-stat .val-dot { width: 8px; height: 8px; }
+
+  @media (max-width: 360px) {
+    .h1 { font-size: 26px; }
+    .student-name { font-size: 24px; }
+    .screen { padding: 20px 16px 28px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+ * CONFIG
+ * ============================================================ */
+const CONFIG = {
+  SUPABASE_URL: 'https://omdoddkgdwwpgdinhxrw.supabase.co',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWYiOiJvbWRvZGRrZ2R3d3BnZGluaHhydyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzM0MDM1NzQ4LCJleHAiOjIwNDk2MTE3NDh9.PLACEHOLDER',
+  STORAGE_KEY: 'evaluar_v1',
+  SESSION_KEY: 'evaluar_session_v1',
+};
+
+const STUDENTS = [
+  'Sofía Martínez', 'Tomás García', 'Valentina López', 'Mateo Rodríguez',
+  'Camila Fernández', 'Santiago Pérez', 'Isabella González', 'Benjamín Díaz',
+  'Lucía Torres', 'Joaquín Ramírez'
+];
+
+const CURSOS = ['4° Grado'];
+const AREAS = ['Lengua'];
+
+const INDICADORES = [
+  'Lee textos narrativos con fluidez y entonación adecuada',
+  'Comprende el sentido global de un texto leído',
+  'Identifica personajes, lugar y tiempo en una narración',
+  'Reconoce la estructura del texto narrativo (inicio, nudo, desenlace)',
+  'Distingue entre texto literario y no literario',
+  'Produce textos narrativos breves con coherencia',
+  'Usa correctamente mayúsculas al inicio de oraciones y nombres propios',
+  'Aplica reglas de acentuación en palabras agudas, graves y esdrújulas',
+  'Reconoce sustantivos comunes y propios',
+  'Identifica adjetivos calificativos en oraciones',
+  'Conjuga verbos en presente, pasado y futuro',
+  'Usa correctamente los signos de puntuación (punto, coma, signos de exclamación e interrogación)',
+  'Construye oraciones con sujeto y predicado claros',
+  'Amplía su vocabulario incorporando sinónimos y antónimos',
+  'Expresa opiniones de forma oral con claridad',
+  'Escucha con atención y respeta el turno de palabra',
+  'Realiza inferencias a partir de textos leídos',
+  'Revisa y corrige sus propios escritos'
+];
+
+const VALORACIONES = [
+  { id: 'logrado', label: 'Logrado', color: '#10b981' },
+  { id: 'proceso', label: 'En proceso', color: '#f59e0b' },
+  { id: 'apoyo', label: 'Necesita apoyo', color: '#ef4444' },
+  { id: 'noeval', label: 'No evaluado', color: '#9ca3af' },
+];
+
+const VAL_MAP = Object.fromEntries(VALORACIONES.map(v => [v.id, v]));
+
+/* ============================================================
+ * UTILS
+ * ============================================================ */
+const $ = (id) => document.getElementById(id);
+const $app = () => $('app');
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatDateShort(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+}
+
+function todayLabel() {
+  const d = new Date();
+  const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]}`;
+}
+
+function toast(msg, ms = 1800) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* ============================================================
+ * DATA LAYER (localStorage)
+ * ============================================================ */
+const DB = {
+  load() {
+    try {
+      const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+      return raw ? JSON.parse(raw) : { evaluations: [] };
+    } catch (e) {
+      return { evaluations: [] };
+    }
+  },
+  save(data) {
+    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+  },
+  getEvaluations() {
+    return this.load().evaluations || [];
+  },
+  getEvaluation(id) {
+    return this.getEvaluations().find(e => e.id === id) || null;
+  },
+  createEvaluation(meta) {
+    const data = this.load();
+    const evalu = {
+      id: uid(),
+      date: new Date().toISOString(),
+      curso: meta.curso,
+      area: meta.area,
+      indicador: meta.indicador,
+      bimestre: meta.bimestre || currentBimestre(),
+      records: STUDENTS.map(name => ({ alumno: name, valoracion: null, observacion: '' }))
+    };
+    data.evaluations.unshift(evalu);
+    this.save(data);
+    return evalu;
+  },
+  updateRecord(evalId, alumno, patch) {
+    const data = this.load();
+    const evalu = data.evaluations.find(e => e.id === evalId);
+    if (!evalu) return null;
+    const rec = evalu.records.find(r => r.alumno === alumno);
+    if (!rec) return null;
+    Object.assign(rec, patch);
+    this.save(data);
+    return rec;
+  },
+  fetchStudents() {
+    return [...STUDENTS];
+  },
+  deleteEvaluation(id) {
+    const data = this.load();
+    data.evaluations = data.evaluations.filter(e => e.id !== id);
+    this.save(data);
+  }
+};
+
+function currentBimestre() {
+  const m = new Date().getMonth();
+  if (m <= 2) return '1°';
+  if (m <= 5) return '2°';
+  if (m <= 8) return '3°';
+  return '4°';
+}
+
+/* ============================================================
+ * AUTH (Supabase OTP)
+ * ============================================================ */
+let supabase = null;
+const AUTH = {
+  async init() {
+    try {
+      supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+    } catch (e) {
+      console.warn('Supabase init failed', e);
+    }
+  },
+  async getSession() {
+    const cached = localStorage.getItem(CONFIG.SESSION_KEY);
+    if (cached) {
+      try { return JSON.parse(cached); } catch (e) {}
+    }
+    if (!supabase) return null;
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session) {
+        const sess = { email: data.session.user.email, ts: Date.now() };
+        localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(sess));
+        return sess;
+      }
+    } catch (e) {}
+    return null;
+  },
+  async sendOtp(email) {
+    if (!supabase) throw new Error('Supabase no disponible');
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true }
+    });
+    if (error) throw error;
+  },
+  async verifyOtp(email, token) {
+    if (!supabase) throw new Error('Supabase no disponible');
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email'
+    });
+    if (error) throw error;
+    const sess = { email: data.user.email, ts: Date.now() };
+    localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(sess));
+    return sess;
+  },
+  async signOut() {
+    if (supabase) {
+      try { await supabase.auth.signOut(); } catch (e) {}
+    }
+    localStorage.removeItem(CONFIG.SESSION_KEY);
+  }
+};
+
+/* ============================================================
+ * STATE
+ * ============================================================ */
+const state = {
+  session: null,
+  screen: 'login',
+  history: [],
+  setup: { curso: CURSOS[0], area: AREAS[0], indicador: null },
+  currentEval: null,
+  studentIdx: 0,
+  auth: { email: '', step: 'email', loading: false, error: '' },
+  historyFilter: { type: 'all', value: null }
+};
+
+/* ============================================================
+ * ROUTER
+ * ============================================================ */
+function showScreen(name, payload, dir = 'right') {
+  state.history.push(state.screen);
+  state.screen = name;
+  if (payload) Object.assign(state, payload);
+  render(dir);
+}
+
+function goBack() {
+  const prev = state.history.pop() || 'home';
+  state.screen = prev;
+  render('left');
+}
+
+function navigate(name, payload) {
+  state.screen = name;
+  if (payload) Object.assign(state, payload);
+  state.history = [];
+  render();
+}
+
+function render(dir) {
+  const app = $app();
+  let html = '';
+  switch (state.screen) {
+    case 'login': html = renderLogin(); break;
+    case 'home': html = renderHome(); break;
+    case 'setup': html = renderSetup(); break;
+    case 'evaluation': html = renderEvaluation(); break;
+    case 'summary': html = renderSummary(); break;
+    case 'history': html = renderHistory(); break;
+    case 'history-detail': html = renderHistoryDetail(); break;
+    default: html = renderHome();
+  }
+  const cls = dir === 'left' ? 'slide-in-left' : dir === 'right' ? 'slide-in-right' : '';
+  app.innerHTML = `<div class="screen ${cls}">${html}</div>`;
+  attachHandlers();
+}
+
+/* ============================================================
+ * RENDERERS
+ * ============================================================ */
+function renderTopbar({ back = false, title = '', right = '' }) {
+  return `
+    <div class="topbar">
+      ${back ? `<button class="back" data-action="back" aria-label="Volver"><span style="font-size:18px;line-height:1">←</span><span>Atrás</span></button>` : `<div class="spacer"></div>`}
+      <div class="title">${esc(title)}</div>
+      <div class="spacer">${right}</div>
+    </div>
+  `;
+}
+
+function renderLogin() {
+  const a = state.auth;
+  if (a.step === 'email') {
+    return `
+      ${renderTopbar({ title: '' })}
+      <div style="padding: 8px 4px 32px;">
+        <div class="h1">Evaluar</div>
+        <p class="lead">Ingresá tu email para recibir un código.</p>
+      </div>
+      <form id="email-form" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" type="email" id="email" name="email" autocomplete="email" inputmode="email" placeholder="docente@ejemplo.com" value="${esc(a.email)}" required>
+        </div>
+        ${a.error ? `<div style="color:var(--apoyo);font-size:13px;margin-bottom:12px">${esc(a.error)}</div>` : ''}
+        <button type="submit" class="btn btn-primary btn-lg" ${a.loading ? 'disabled' : ''}>
+          ${a.loading ? '<div class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:white"></div>' : 'Enviar código'}
+        </button>
+      </form>
+      <p style="margin-top:24px;font-size:12px;color:var(--text-mute);text-align:center;line-height:1.5">
+        Te enviaremos un código de 6 dígitos.<br>Sin contraseñas.
+      </p>
+    `;
+  }
+  return `
+    ${renderTopbar({ title: '' })}
+    <button class="back" data-action="auth-back" style="margin-bottom: 16px; align-self: flex-start;"><span style="font-size:18px;line-height:1">←</span><span>Cambiar email</span></button>
+    <div style="padding: 0 4px 32px;">
+      <div class="h1">Código</div>
+      <p class="lead">Enviamos un código a <strong>${esc(a.email)}</strong></p>
+    </div>
+    <form id="code-form" novalidate>
+      <div class="field">
+        <label for="code">Código de 6 dígitos</label>
+        <input class="input center" type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="000000" required>
+      </div>
+      ${a.error ? `<div style="color:var(--apoyo);font-size:13px;margin-bottom:12px">${esc(a.error)}</div>` : ''}
+      <button type="submit" class="btn btn-primary btn-lg" ${a.loading ? 'disabled' : ''}>
+        ${a.loading ? '<div class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:white"></div>' : 'Verificar e ingresar'}
+      </button>
+    </form>
+    <button class="btn btn-ghost" data-action="resend" style="margin-top:12px">Reenviar código</button>
+  `;
+}
+
+function renderHome() {
+  const evals = DB.getEvaluations();
+  const total = evals.length;
+  const studentsEvaluated = new Set();
+  let recentBimestre = currentBimestre();
+  evals.forEach(e => e.records.forEach(r => { if (r.valoracion) studentsEvaluated.add(r.alumno); }));
+
+  return `
+    ${renderTopbar({
+      title: '',
+      right: `<button class="btn-ghost" data-action="signout" style="font-size:13px;padding:8px;border-radius:8px">Salir</button>`
+    })}
+    <div class="home-hero">
+      <div class="greeting">${esc(todayLabel())}</div>
+      <div class="h1">Evaluar</div>
+    </div>
+    <div class="home-cta">
+      <button class="btn btn-primary" data-action="new-eval">
+        <span>Nueva evaluación</span>
+        <span class="sub">Registrá el desempeño de tu clase</span>
+      </button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-value">${total}</div>
+        <div class="stat-label">Evaluaciones registradas</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${recentBimestre}</div>
+        <div class="stat-label">Bimestre actual</div>
+      </div>
+    </div>
+    <div style="margin-top: 24px;">
+      <button class="list-item" data-action="history">
+        <div class="list-item-body">
+          <div class="list-item-title">Historial</div>
+          <div class="list-item-meta">Ver todas las evaluaciones</div>
+        </div>
+        <div class="arrow">›</div>
+      </button>
+    </div>
+    ${total === 0 ? `
+      <div style="margin-top:32px;padding:20px;background:var(--accent-soft);border-radius:16px;">
+        <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:4px">Comenzá tu primera evaluación</div>
+        <div style="font-size:13px;color:var(--accent);opacity:0.85;line-height:1.5">Elegí un indicador y registrá el desempeño de cada estudiante en pocos toques.</div>
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderSetup() {
+  const s = state.setup;
+  const canStart = s.curso && s.area && s.indicador != null;
+  return `
+    ${renderTopbar({ back: true, title: 'Nueva evaluación' })}
+    <div style="margin-bottom: 24px;">
+      <div class="h2">Configurar</div>
+      <p class="lead" style="margin-bottom:0">Seleccioná el curso, área e indicador.</p>
+    </div>
+    <div style="margin-bottom: 20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">Curso</div>
+      <div class="list">
+        ${CURSOS.map(c => `
+          <button class="list-item ${s.curso === c ? 'active' : ''}" data-action="set-curso" data-value="${esc(c)}">
+            <div class="list-item-body"><div class="list-item-title">${esc(c)}</div></div>
+            <div class="arrow">${s.curso === c ? '✓' : '›'}</div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+    <div style="margin-bottom: 20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">Área</div>
+      <div class="list">
+        ${AREAS.map(a => `
+          <button class="list-item ${s.area === a ? 'active' : ''}" data-action="set-area" data-value="${esc(a)}">
+            <div class="list-item-body"><div class="list-item-title">${esc(a)}</div></div>
+            <div class="arrow">${s.area === a ? '✓' : '›'}</div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+    <div style="margin-bottom: 20px; flex:1; min-height:0; display:flex; flex-direction:column;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">Indicador</div>
+      <div class="indicator-list">
+        ${INDICADORES.map((ind, i) => `
+          <button class="indicator-item ${s.indicador === i ? 'selected' : ''}" data-action="set-indicador" data-value="${i}">
+            <span class="indicator-num">${String(i + 1).padStart(2, '0')}</span>
+            <span class="indicator-text">${esc(ind)}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" data-action="start-eval" ${canStart ? '' : 'disabled'}>
+      Comenzar evaluación
+    </button>
+  `;
+}
+
+function renderEvaluation() {
+  const ev = state.currentEval;
+  if (!ev) { navigate('home'); return ''; }
+  const idx = state.studentIdx;
+  const rec = ev.records[idx];
+  const total = ev.records.length;
+  const completedCount = ev.records.filter(r => r.valoracion).length;
+  const progress = Math.round((completedCount / total) * 100);
+  const obsOpen = rec.observacion && rec.observacion.length > 0;
+
+  return `
+    ${renderTopbar({
+      back: true,
+      title: `${esc(ev.curso)} · ${esc(ev.area)}`,
+      right: `<button class="btn-ghost" data-action="finish-eval" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600">Resumen</button>`
+    })}
+    <div class="indicator-pill">Indicador ${INDICADORES.indexOf(ev.indicador) + 1}</div>
+    <div style="font-size:14px;color:var(--text-soft);line-height:1.45;margin-bottom:20px;font-weight:500">${esc(ev.indicador)}</div>
+
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span>${idx + 1} de ${total}</span>
+        <span>${completedCount} evaluados</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+    </div>
+
+    <div class="student-card">
+      <div class="student-name">${esc(rec.alumno)}</div>
+      <div class="student-meta">${rec.valoracion ? esc(VAL_MAP[rec.valoracion].label) : 'Sin evaluar'}</div>
+    </div>
+
+    <div class="valoracion-group">
+      ${VALORACIONES.map(v => `
+        <button class="val-btn ${rec.valoracion === v.id ? 'selected' : ''}" data-action="set-val" data-value="${v.id}" data-val="${v.id}">
+          <span class="val-dot"></span>
+          <span>${esc(v.label)}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="obs-section">
+      <button class="obs-toggle ${obsOpen ? 'open has-content' : ''}" data-action="toggle-obs">
+        <span>${rec.observacion ? 'Observación' : 'Agregar observación'}</span>
+        <span class="chev">▼</span>
+      </button>
+      <div class="obs-body ${obsOpen ? 'open' : ''}" id="obs-body">
+        <textarea class="input" id="obs-input" placeholder="Ej: Mostró progreso en lectura comprensiva..." rows="3">${esc(rec.observacion || '')}</textarea>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" data-action="prev-student" ${idx === 0 ? 'disabled' : ''}>← Anterior</button>
+      <button class="btn btn-primary" data-action="next-student">
+        ${idx === total - 1 ? 'Finalizar' : 'Siguiente →'}
+      </button>
+    </div>
+  `;
+}
+
+function renderSummary() {
+  const ev = state.currentEval;
+  if (!ev) { navigate('home'); return ''; }
+  const total = ev.records.length;
+  const evaluated = ev.records.filter(r => r.valoracion && r.valoracion !== 'noeval');
+  const evaluatedCount = evaluated.length;
+  const pending = total - ev.records.filter(r => r.valoracion).length;
+  const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
+  ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
+  const observations = ev.records.filter(r => r.observacion && r.observacion.trim());
+
+  return `
+    ${renderTopbar({ back: true, title: 'Resumen', right: `<button class="btn-ghost" data-action="goto-home" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600">Inicio</button>` })}
+    <div class="indicator-pill">Indicador ${INDICADORES.indexOf(ev.indicador) + 1}</div>
+    <div style="font-size:15px;color:var(--text);line-height:1.4;margin-bottom:6px;font-weight:600">${esc(ev.indicador)}</div>
+    <div style="font-size:13px;color:var(--text-mute);margin-bottom:24px">${esc(ev.curso)} · ${esc(ev.area)} · ${formatDate(ev.date)}</div>
+
+    <div class="summary-grid">
+      <div class="stat">
+        <div class="stat-value">${evaluatedCount}/${total}</div>
+        <div class="stat-label">Evaluados</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${pending}</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+    </div>
+
+    <div class="distribution">
+      <h3 class="h3">Distribución</h3>
+      ${VALORACIONES.map(v => {
+        const c = counts[v.id];
+        const pct = total > 0 ? (c / total) * 100 : 0;
+        return `
+          <div class="dist-row">
+            <div class="dist-label">
+              <span class="val-dot" style="background:${v.color}"></span>
+              <span>${esc(v.label)}</span>
+            </div>
+            <div class="dist-bar-track"><div class="dist-bar-fill ${v.id}" style="width:${pct}%"></div></div>
+            <div class="dist-count">${c}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+
+    ${observations.length > 0 ? `
+      <h3 class="h3" style="margin-bottom:10px">Observaciones</h3>
+      <div class="obs-list">
+        ${observations.map(r => `
+          <div class="obs-item">
+            <div class="obs-item-name">${esc(r.alumno)}</div>
+            <div class="obs-item-text">${esc(r.observacion)}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '<div class="muted" style="margin-top:16px">Sin observaciones registradas.</div>'}
+
+    <div style="margin-top:24px;display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-primary" data-action="continue-eval">Volver a evaluación</button>
+      <button class="btn btn-secondary" data-action="goto-home">Ir al inicio</button>
+    </div>
+  `;
+}
+
+function renderHistory() {
+  const f = state.historyFilter;
+  const all = DB.getEvaluations();
+  const filtered = all.filter(ev => {
+    if (f.type === 'all') return true;
+    if (f.type === 'student') return ev.records.some(r => r.alumno === f.value && r.valoracion);
+    if (f.type === 'indicador') return ev.indicador === f.value;
+    return true;
+  });
+
+  const indicadorChips = [...new Set(all.map(e => e.indicador))];
+
+  return `
+    ${renderTopbar({ back: true, title: 'Historial' })}
+    <div class="h2" style="margin-bottom: 16px">Evaluaciones</div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">Filtrar</div>
+    <div class="filter-bar">
+      <button class="filter-chip ${f.type === 'all' ? 'active' : ''}" data-action="filter-all">Todas</button>
+      ${STUDENTS.map(s => `
+        <button class="filter-chip ${f.type === 'student' && f.value === s ? 'active' : ''}" data-action="filter-student" data-value="${esc(s)}">${esc(s.split(' ')[0])}</button>
+      `).join('')}
+    </div>
+
+    ${indicadorChips.length > 0 ? `
+      <div style="font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:8px;margin-top:8px;text-transform:uppercase;letter-spacing:0.04em">Por indicador</div>
+      <div class="filter-bar">
+        ${indicadorChips.map((ind) => {
+          const num = INDICADORES.indexOf(ind) + 1;
+          return `<button class="filter-chip ${f.type === 'indicador' && f.value === ind ? 'active' : ''}" data-action="filter-indicador" data-value="${esc(ind)}">Ind. ${num}</button>`;
+        }).join('')}
+      </div>
+    ` : ''}
+
+    <div style="margin-top: 12px;">
+      ${filtered.length === 0 ? `
+        <div class="empty">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">Sin evaluaciones</div>
+          <div class="empty-text">${all.length === 0 ? 'Aún no registraste ninguna evaluación.' : 'No hay resultados con este filtro.'}</div>
+        </div>
+      ` : `
+        <div class="list">
+          ${filtered.map(ev => {
+            const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
+            ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
+            const num = INDICADORES.indexOf(ev.indicador) + 1;
+            return `
+              <button class="history-item" data-action="open-history" data-id="${esc(ev.id)}">
+                <div class="history-date">${formatDate(ev.date)} · ${esc(ev.curso)} · ${esc(ev.area)} · Ind. ${num}</div>
+                <div class="history-indicator">${esc(ev.indicador)}</div>
+                <div class="history-stats">
+                  ${VALORACIONES.map(v => counts[v.id] > 0 ? `<span class="history-stat"><span class="val-dot" style="background:${v.color}"></span>${counts[v.id]}</span>` : '').join('')}
+                </div>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function renderHistoryDetail() {
+  const ev = state.currentEval;
+  if (!ev) { navigate('history'); return ''; }
+  return renderSummary().replace(
+    `<button class="btn btn-primary" data-action="continue-eval">Volver a evaluación</button>`,
+    `<button class="btn btn-secondary" data-action="delete-eval" style="color:var(--apoyo)">Eliminar evaluación</button>`
+  );
+}
+
+/* ============================================================
+ * EVENT HANDLERS
+ * ============================================================ */
+function attachHandlers() {
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.addEventListener('click', onAction);
+  });
+
+  const emailForm = $('email-form');
+  if (emailForm) emailForm.addEventListener('submit', onSubmitEmail);
+
+  const codeForm = $('code-form');
+  if (codeForm) codeForm.addEventListener('submit', onSubmitCode);
+
+  const obsInput = $('obs-input');
+  if (obsInput) {
+    obsInput.addEventListener('input', onObsInput);
+    obsInput.addEventListener('blur', onObsBlur);
+  }
+}
+
+function onAction(e) {
+  const el = e.currentTarget;
+  const action = el.dataset.action;
+  const value = el.dataset.value;
+
+  switch (action) {
+    case 'back': return goBack();
+    case 'auth-back':
+      state.auth = { ...state.auth, step: 'email', error: '' };
+      render();
+      return;
+    case 'signout': return doSignOut();
+    case 'new-eval':
+      state.setup = { curso: CURSOS[0], area: AREAS[0], indicador: null };
+      showScreen('setup');
+      return;
+    case 'history':
+      state.historyFilter = { type: 'all', value: null };
+      showScreen('history');
+      return;
+    case 'set-curso': state.setup.curso = value; render(); return;
+    case 'set-area': state.setup.area = value; render(); return;
+    case 'set-indicador':
+      state.setup.indicador = parseInt(value, 10);
+      render();
+      return;
+    case 'start-eval': return startEvaluation();
+    case 'set-val': return setValoracion(value);
+    case 'prev-student':
+      if (state.studentIdx > 0) {
+        state.studentIdx--;
+        render('left');
+      }
+      return;
+    case 'next-student':
+      if (state.studentIdx < state.currentEval.records.length - 1) {
+        state.studentIdx++;
+        render('right');
+      } else {
+        showScreen('summary');
+      }
+      return;
+    case 'toggle-obs': return toggleObs();
+    case 'finish-eval': return showScreen('summary');
+    case 'continue-eval': return showScreen('evaluation');
+    case 'goto-home': return navigate('home');
+    case 'filter-all':
+      state.historyFilter = { type: 'all', value: null };
+      render();
+      return;
+    case 'filter-student':
+      state.historyFilter = { type: 'student', value };
+      render();
+      return;
+    case 'filter-indicador':
+      state.historyFilter = { type: 'indicador', value };
+      render();
+      return;
+    case 'open-history':
+      const ev = DB.getEvaluation(el.dataset.id);
+      if (ev) {
+        state.currentEval = ev;
+        showScreen('history-detail');
+      }
+      return;
+    case 'delete-eval':
+      if (confirm('¿Eliminar esta evaluación? No se puede deshacer.')) {
+        DB.deleteEvaluation(state.currentEval.id);
+        toast('Evaluación eliminada');
+        navigate('history');
+      }
+      return;
+    case 'resend':
+      doSendOtp(state.auth.email);
+      return;
+  }
+}
+
+function startEvaluation() {
+  const s = state.setup;
+  if (s.indicador == null) return;
+  const ev = DB.createEvaluation({
+    curso: s.curso,
+    area: s.area,
+    indicador: INDICADORES[s.indicador]
+  });
+  state.currentEval = ev;
+  state.studentIdx = 0;
+  showScreen('evaluation');
+}
+
+function setValoracion(val) {
+  const ev = state.currentEval;
+  const rec = ev.records[state.studentIdx];
+  rec.valoracion = val;
+  DB.updateRecord(ev.id, rec.alumno, { valoracion: val });
+  toast(`Guardado: ${VAL_MAP[val].label}`);
+  // Update UI without full re-render for snappy feel
+  document.querySelectorAll('.val-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.value === val);
+  });
+  const meta = document.querySelector('.student-meta');
+  if (meta) meta.textContent = VAL_MAP[val].label;
+  // Update progress
+  const completed = ev.records.filter(r => r.valoracion).length;
+  const total = ev.records.length;
+  const pct = Math.round((completed / total) * 100);
+  const fill = document.querySelector('.progress-fill');
+  if (fill) fill.style.width = pct + '%';
+  const metaProg = document.querySelectorAll('.progress-meta span');
+  if (metaProg[1]) metaProg[1].textContent = `${completed} evaluados`;
+}
+
+function toggleObs() {
+  const toggle = document.querySelector('.obs-toggle');
+  const body = $('obs-body');
+  toggle.classList.toggle('open');
+  body.classList.toggle('open');
+  if (body.classList.contains('open')) {
+    setTimeout(() => $('obs-input')?.focus(), 200);
+  }
+}
+
+let obsTimer = null;
+function onObsInput(e) {
+  const ev = state.currentEval;
+  const rec = ev.records[state.studentIdx];
+  rec.observacion = e.target.value;
+  clearTimeout(obsTimer);
+  obsTimer = setTimeout(() => {
+    DB.updateRecord(ev.id, rec.alumno, { observacion: rec.observacion });
+  }, 400);
+  const toggle = document.querySelector('.obs-toggle');
+  if (toggle) {
+    toggle.classList.toggle('has-content', !!rec.observacion);
+    const span = toggle.querySelector('span:first-child');
+    if (span) span.textContent = rec.observacion ? 'Observación' : 'Agregar observación';
+  }
+}
+
+function onObsBlur() {
+  const ev = state.currentEval;
+  const rec = ev.records[state.studentIdx];
+  DB.updateRecord(ev.id, rec.alumno, { observacion: rec.observacion });
+}
+
+async function onSubmitEmail(e) {
+  e.preventDefault();
+  const email = $('email').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    state.auth.error = 'Ingresá un email válido';
+    return render();
+  }
+  state.auth.email = email;
+  state.auth.error = '';
+  await doSendOtp(email);
+}
+
+async function doSendOtp(email) {
+  state.auth.loading = true;
+  state.auth.error = '';
+  render();
+  try {
+    await AUTH.sendOtp(email);
+    state.auth.step = 'code';
+    state.auth.loading = false;
+    render();
+  } catch (err) {
+    state.auth.loading = false;
+    state.auth.error = err.message || 'No pudimos enviar el código. Intentá de nuevo.';
+    render();
+  }
+}
+
+async function onSubmitCode(e) {
+  e.preventDefault();
+  const token = $('code').value.trim();
+  if (token.length !== 6) {
+    state.auth.error = 'El código tiene 6 dígitos';
+    return render();
+  }
+  state.auth.loading = true;
+  state.auth.error = '';
+  render();
+  try {
+    const sess = await AUTH.verifyOtp(state.auth.email, token);
+    state.session = sess;
+    state.auth = { email: '', step: 'email', loading: false, error: '' };
+    navigate('home');
+  } catch (err) {
+    state.auth.loading = false;
+    state.auth.error = err.message || 'Código incorrecto';
+    render();
+  }
+}
+
+async function doSignOut() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  await AUTH.signOut();
+  state.session = null;
+  state.auth = { email: '', step: 'email', loading: false, error: '' };
+  navigate('login');
+}
+
+/* ============================================================
+ * INIT
+ * ============================================================ */
+async function init() {
+  await AUTH.init();
+  const sess = await AUTH.getSession();
+  if (sess) {
+    state.session = sess;
+    state.screen = 'home';
+  } else {
+    state.screen = 'login';
+  }
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
