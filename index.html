@@ -212,16 +212,12 @@
 <div id="app"></div>
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ============================================================
  * CONFIG
  * ============================================================ */
 const CONFIG = {
-  SUPABASE_URL: 'https://omdoddkgdwwpgdinhxrw.supabase.co',
-  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWYiOiJvbWRvZGRrZ2R3d3BnZGluaHhydyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzM0MDM1NzQ4LCJleHAiOjIwNDk2MTE3NDh9.PLACEHOLDER',
   STORAGE_KEY: 'evaluar_v1',
-  SESSION_KEY: 'evaluar_session_v1',
 };
 
 const STUDENTS = [
@@ -374,72 +370,14 @@ function currentBimestre() {
 }
 
 /* ============================================================
- * AUTH (Supabase OTP)
- * ============================================================ */
-let sbClient = null;
-const AUTH = {
-  async init() {
-    try {
-      sbClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-    } catch (e) {
-      console.warn('Supabase init failed', e);
-    }
-  },
-  async getSession() {
-    const cached = localStorage.getItem(CONFIG.SESSION_KEY);
-    if (cached) {
-      try { return JSON.parse(cached); } catch (e) {}
-    }
-    if (!sbClient) return null;
-    try {
-      const { data } = await sbClient.auth.getSession();
-      if (data?.session) {
-        const sess = { email: data.session.user.email, ts: Date.now() };
-        localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(sess));
-        return sess;
-      }
-    } catch (e) {}
-    return null;
-  },
-  async sendOtp(email) {
-    if (!sbClient) throw new Error('Supabase no disponible');
-    const { error } = await sbClient.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true }
-    });
-    if (error) throw error;
-  },
-  async verifyOtp(email, token) {
-    if (!sbClient) throw new Error('Supabase no disponible');
-    const { data, error } = await sbClient.auth.verifyOtp({
-      email,
-      token,
-      type: 'email'
-    });
-    if (error) throw error;
-    const sess = { email: data.user.email, ts: Date.now() };
-    localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(sess));
-    return sess;
-  },
-  async signOut() {
-    if (sbClient) {
-      try { await sbClient.auth.signOut(); } catch (e) {}
-    }
-    localStorage.removeItem(CONFIG.SESSION_KEY);
-  }
-};
-
-/* ============================================================
  * STATE
  * ============================================================ */
 const state = {
-  session: null,
-  screen: 'login',
+  screen: 'home',
   history: [],
   setup: { curso: CURSOS[0], area: AREAS[0], indicador: null },
   currentEval: null,
   studentIdx: 0,
-  auth: { email: '', step: 'email', loading: false, error: '' },
   historyFilter: { type: 'all', value: null }
 };
 
@@ -470,7 +408,6 @@ function render(dir) {
   const app = $app();
   let html = '';
   switch (state.screen) {
-    case 'login': html = renderLogin(); break;
     case 'home': html = renderHome(); break;
     case 'setup': html = renderSetup(); break;
     case 'evaluation': html = renderEvaluation(); break;
@@ -497,51 +434,6 @@ function renderTopbar({ back = false, title = '', right = '' }) {
   `;
 }
 
-function renderLogin() {
-  const a = state.auth;
-  if (a.step === 'email') {
-    return `
-      ${renderTopbar({ title: '' })}
-      <div style="padding: 8px 4px 32px;">
-        <div class="h1">Evaluar</div>
-        <p class="lead">Ingresá tu email para recibir un código.</p>
-      </div>
-      <form id="email-form" novalidate>
-        <div class="field">
-          <label for="email">Email</label>
-          <input class="input" type="email" id="email" name="email" autocomplete="email" inputmode="email" placeholder="docente@ejemplo.com" value="${esc(a.email)}" required>
-        </div>
-        ${a.error ? `<div style="color:var(--apoyo);font-size:13px;margin-bottom:12px">${esc(a.error)}</div>` : ''}
-        <button type="submit" class="btn btn-primary btn-lg" ${a.loading ? 'disabled' : ''}>
-          ${a.loading ? '<div class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:white"></div>' : 'Enviar código'}
-        </button>
-      </form>
-      <p style="margin-top:24px;font-size:12px;color:var(--text-mute);text-align:center;line-height:1.5">
-        Te enviaremos un código de 6 dígitos.<br>Sin contraseñas.
-      </p>
-    `;
-  }
-  return `
-    ${renderTopbar({ title: '' })}
-    <button class="back" data-action="auth-back" style="margin-bottom: 16px; align-self: flex-start;"><span style="font-size:18px;line-height:1">←</span><span>Cambiar email</span></button>
-    <div style="padding: 0 4px 32px;">
-      <div class="h1">Código</div>
-      <p class="lead">Enviamos un código a <strong>${esc(a.email)}</strong></p>
-    </div>
-    <form id="code-form" novalidate>
-      <div class="field">
-        <label for="code">Código de 6 dígitos</label>
-        <input class="input center" type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="000000" required>
-      </div>
-      ${a.error ? `<div style="color:var(--apoyo);font-size:13px;margin-bottom:12px">${esc(a.error)}</div>` : ''}
-      <button type="submit" class="btn btn-primary btn-lg" ${a.loading ? 'disabled' : ''}>
-        ${a.loading ? '<div class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:white"></div>' : 'Verificar e ingresar'}
-      </button>
-    </form>
-    <button class="btn btn-ghost" data-action="resend" style="margin-top:12px">Reenviar código</button>
-  `;
-}
-
 function renderHome() {
   const evals = DB.getEvaluations();
   const total = evals.length;
@@ -550,10 +442,7 @@ function renderHome() {
   evals.forEach(e => e.records.forEach(r => { if (r.valoracion) studentsEvaluated.add(r.alumno); }));
 
   return `
-    ${renderTopbar({
-      title: '',
-      right: `<button class="btn-ghost" data-action="signout" style="font-size:13px;padding:8px;border-radius:8px">Salir</button>`
-    })}
+    ${renderTopbar({ title: '' })}
     <div class="home-hero">
       <div class="greeting">${esc(todayLabel())}</div>
       <div class="h1">Evaluar</div>
@@ -845,12 +734,6 @@ function attachHandlers() {
     el.addEventListener('click', onAction);
   });
 
-  const emailForm = $('email-form');
-  if (emailForm) emailForm.addEventListener('submit', onSubmitEmail);
-
-  const codeForm = $('code-form');
-  if (codeForm) codeForm.addEventListener('submit', onSubmitCode);
-
   const obsInput = $('obs-input');
   if (obsInput) {
     obsInput.addEventListener('input', onObsInput);
@@ -865,11 +748,6 @@ function onAction(e) {
 
   switch (action) {
     case 'back': return goBack();
-    case 'auth-back':
-      state.auth = { ...state.auth, step: 'email', error: '' };
-      render();
-      return;
-    case 'signout': return doSignOut();
     case 'new-eval':
       state.setup = { curso: CURSOS[0], area: AREAS[0], indicador: null };
       showScreen('setup');
@@ -929,9 +807,6 @@ function onAction(e) {
         toast('Evaluación eliminada');
         navigate('history');
       }
-      return;
-    case 'resend':
-      doSendOtp(state.auth.email);
       return;
   }
 }
@@ -1004,76 +879,11 @@ function onObsBlur() {
   DB.updateRecord(ev.id, rec.alumno, { observacion: rec.observacion });
 }
 
-async function onSubmitEmail(e) {
-  e.preventDefault();
-  const email = $('email').value.trim().toLowerCase();
-  if (!email || !email.includes('@')) {
-    state.auth.error = 'Ingresá un email válido';
-    return render();
-  }
-  state.auth.email = email;
-  state.auth.error = '';
-  await doSendOtp(email);
-}
-
-async function doSendOtp(email) {
-  state.auth.loading = true;
-  state.auth.error = '';
-  render();
-  try {
-    await AUTH.sendOtp(email);
-    state.auth.step = 'code';
-    state.auth.loading = false;
-    render();
-  } catch (err) {
-    state.auth.loading = false;
-    state.auth.error = err.message || 'No pudimos enviar el código. Intentá de nuevo.';
-    render();
-  }
-}
-
-async function onSubmitCode(e) {
-  e.preventDefault();
-  const token = $('code').value.trim();
-  if (token.length !== 6) {
-    state.auth.error = 'El código tiene 6 dígitos';
-    return render();
-  }
-  state.auth.loading = true;
-  state.auth.error = '';
-  render();
-  try {
-    const sess = await AUTH.verifyOtp(state.auth.email, token);
-    state.session = sess;
-    state.auth = { email: '', step: 'email', loading: false, error: '' };
-    navigate('home');
-  } catch (err) {
-    state.auth.loading = false;
-    state.auth.error = err.message || 'Código incorrecto';
-    render();
-  }
-}
-
-async function doSignOut() {
-  if (!confirm('¿Cerrar sesión?')) return;
-  await AUTH.signOut();
-  state.session = null;
-  state.auth = { email: '', step: 'email', loading: false, error: '' };
-  navigate('login');
-}
-
 /* ============================================================
  * INIT
  * ============================================================ */
-async function init() {
-  await AUTH.init();
-  const sess = await AUTH.getSession();
-  if (sess) {
-    state.session = sess;
-    state.screen = 'home';
-  } else {
-    state.screen = 'login';
-  }
+function init() {
+  state.screen = 'home';
   render();
 }
 
