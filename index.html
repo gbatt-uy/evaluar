@@ -201,6 +201,60 @@
   .history-stat { display: inline-flex; align-items: center; gap: 4px; }
   .history-stat .val-dot { width: 8px; height: 8px; }
 
+  /* Indicator management */
+  .manage-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; }
+  .manage-item .indicator-num { padding-top: 2px; }
+  .manage-text { flex: 1; font-size: 14px; line-height: 1.4; min-width: 0; word-wrap: break-word; }
+  .manage-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-alt); color: var(--text-soft); font-size: 15px; transition: background .12s ease, color .12s ease; }
+  .icon-btn:active { background: var(--border); }
+  .icon-btn.danger { color: var(--apoyo); }
+  .icon-btn.danger:active { background: #fee2e2; }
+  .manage-edit { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+  .manage-edit-actions { display: flex; gap: 8px; }
+  .manage-edit-actions .btn { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .add-indicator-card { background: var(--accent-soft); border: 1.5px dashed var(--accent); border-radius: 14px; padding: 16px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .add-indicator-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface); border: 1.5px dashed var(--border); border-radius: 14px; padding: 16px; color: var(--accent); font-weight: 600; font-size: 15px; width: 100%; min-height: 56px; margin-bottom: 14px; transition: background .12s ease, border-color .12s ease; }
+  .add-indicator-btn:active { background: var(--accent-soft); border-color: var(--accent); }
+  .add-indicator-btn .plus { font-size: 18px; font-weight: 700; }
+
+  /* Students view */
+  .students-list { display: flex; flex-direction: column; gap: 10px; }
+  .student-row { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .student-row-head { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; transition: background .12s ease; }
+  .student-row-head:active { background: var(--surface-alt); }
+  .student-row.expanded .student-row-head { background: var(--surface-alt); border-bottom: 1px solid var(--border); }
+  .student-row-name { font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .student-row-name .chev { color: var(--text-mute); font-size: 12px; transition: transform .2s ease; }
+  .student-row.expanded .student-row-name .chev { transform: rotate(180deg); }
+  .dot-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--noeval); position: relative; }
+  .dot.logrado { background: var(--logrado); }
+  .dot.proceso { background: var(--proceso); }
+  .dot.apoyo { background: var(--apoyo); }
+  .dot.noeval { background: var(--noeval); }
+  .dot.empty { background: var(--border); }
+  .student-detail { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .student-detail-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--surface-alt); }
+  .student-detail-row:last-child { border-bottom: none; }
+  .student-detail-row .val-dot { width: 10px; height: 10px; margin-top: 6px; flex-shrink: 0; }
+  .student-detail-row .val-dot.logrado { background: var(--logrado); }
+  .student-detail-row .val-dot.proceso { background: var(--proceso); }
+  .student-detail-row .val-dot.apoyo { background: var(--apoyo); }
+  .student-detail-row .val-dot.noeval { background: var(--noeval); }
+  .student-detail-row .val-dot.empty { background: var(--border); }
+  .student-detail-body { flex: 1; min-width: 0; }
+  .student-detail-ind { font-size: 13px; font-weight: 600; line-height: 1.35; margin-bottom: 2px; }
+  .student-detail-meta { font-size: 12px; color: var(--text-mute); }
+  .student-detail-obs { font-size: 13px; color: var(--text-soft); line-height: 1.4; margin-top: 4px; padding: 8px 10px; background: var(--surface-alt); border-radius: 8px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; font-size: 12px; color: var(--text-soft); }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-item .dot { width: 9px; height: 9px; }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 14px; }
+  .toolbar .btn { flex: 1; min-height: 44px; padding: 10px 14px; font-size: 14px; }
+
   @media (max-width: 360px) {
     .h1 { font-size: 26px; }
     .student-name { font-size: 24px; }
@@ -229,7 +283,7 @@ const STUDENTS = [
 const CURSOS = ['4° Grado'];
 const AREAS = ['Lengua'];
 
-const INDICADORES = [
+const DEFAULT_INDICATORS_TEXT = [
   'Lee textos narrativos con fluidez y entonación adecuada',
   'Comprende el sentido global de un texto leído',
   'Identifica personajes, lugar y tiempo en una narración',
@@ -310,12 +364,18 @@ function toast(msg, ms = 1800) {
  * ============================================================ */
 const DB = {
   load() {
+    let data;
     try {
       const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
-      return raw ? JSON.parse(raw) : { evaluations: [] };
+      data = raw ? JSON.parse(raw) : {};
     } catch (e) {
-      return { evaluations: [] };
+      data = {};
     }
+    if (!Array.isArray(data.evaluations)) data.evaluations = [];
+    if (!Array.isArray(data.indicators) || data.indicators.length === 0) {
+      data.indicators = DEFAULT_INDICATORS_TEXT.map(text => ({ id: uid(), text }));
+    }
+    return data;
   },
   save(data) {
     localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
@@ -326,6 +386,29 @@ const DB = {
   getEvaluation(id) {
     return this.getEvaluations().find(e => e.id === id) || null;
   },
+  getIndicators() {
+    return this.load().indicators || [];
+  },
+  addIndicator(text) {
+    const data = this.load();
+    const ind = { id: uid(), text: text.trim() };
+    data.indicators.push(ind);
+    this.save(data);
+    return ind;
+  },
+  updateIndicator(id, text) {
+    const data = this.load();
+    const ind = data.indicators.find(i => i.id === id);
+    if (!ind) return null;
+    ind.text = text.trim();
+    this.save(data);
+    return ind;
+  },
+  deleteIndicator(id) {
+    const data = this.load();
+    data.indicators = data.indicators.filter(i => i.id !== id);
+    this.save(data);
+  },
   createEvaluation(meta) {
     const data = this.load();
     const evalu = {
@@ -333,6 +416,7 @@ const DB = {
       date: new Date().toISOString(),
       curso: meta.curso,
       area: meta.area,
+      indicadorId: meta.indicadorId,
       indicador: meta.indicador,
       bimestre: meta.bimestre || currentBimestre(),
       records: STUDENTS.map(name => ({ alumno: name, valoracion: null, observacion: '' }))
@@ -369,16 +453,38 @@ function currentBimestre() {
   return '4°';
 }
 
+function resolveIndicator(ev) {
+  const indicators = DB.getIndicators();
+  let ind = null;
+  if (ev.indicadorId) {
+    ind = indicators.find(i => i.id === ev.indicadorId);
+  }
+  if (!ind && ev.indicador) {
+    ind = indicators.find(i => i.text === ev.indicador);
+  }
+  if (ind) {
+    return { number: indicators.indexOf(ind) + 1, text: ind.text, id: ind.id, exists: true };
+  }
+  return { number: null, text: ev.indicador || '', id: null, exists: false };
+}
+
+function indNumLabel(ev) {
+  const r = resolveIndicator(ev);
+  return r.number != null ? `Ind. ${r.number}` : 'Ind. —';
+}
+
 /* ============================================================
  * STATE
  * ============================================================ */
 const state = {
   screen: 'home',
   history: [],
-  setup: { curso: CURSOS[0], area: AREAS[0], indicador: null },
+  setup: { curso: CURSOS[0], area: AREAS[0], indicadorId: null },
   currentEval: null,
   studentIdx: 0,
-  historyFilter: { type: 'all', value: null }
+  historyFilter: { type: 'all', value: null },
+  indicatorEdit: { editingId: null, adding: false, draft: '' },
+  expandedStudent: null
 };
 
 /* ============================================================
@@ -414,6 +520,8 @@ function render(dir) {
     case 'summary': html = renderSummary(); break;
     case 'history': html = renderHistory(); break;
     case 'history-detail': html = renderHistoryDetail(); break;
+    case 'manage-indicators': html = renderManageIndicators(); break;
+    case 'students': html = renderStudents(); break;
     default: html = renderHome();
   }
   const cls = dir === 'left' ? 'slide-in-left' : dir === 'right' ? 'slide-in-right' : '';
@@ -437,9 +545,7 @@ function renderTopbar({ back = false, title = '', right = '' }) {
 function renderHome() {
   const evals = DB.getEvaluations();
   const total = evals.length;
-  const studentsEvaluated = new Set();
   let recentBimestre = currentBimestre();
-  evals.forEach(e => e.records.forEach(r => { if (r.valoracion) studentsEvaluated.add(r.alumno); }));
 
   return `
     ${renderTopbar({ title: '' })}
@@ -463,7 +569,14 @@ function renderHome() {
         <div class="stat-label">Bimestre actual</div>
       </div>
     </div>
-    <div style="margin-top: 24px;">
+    <div style="margin-top: 24px;" class="list">
+      <button class="list-item" data-action="students">
+        <div class="list-item-body">
+          <div class="list-item-title">Alumnos</div>
+          <div class="list-item-meta">Ver desempeño por estudiante</div>
+        </div>
+        <div class="arrow">›</div>
+      </button>
       <button class="list-item" data-action="history">
         <div class="list-item-body">
           <div class="list-item-title">Historial</div>
@@ -471,9 +584,16 @@ function renderHome() {
         </div>
         <div class="arrow">›</div>
       </button>
+      <button class="list-item" data-action="manage-indicators">
+        <div class="list-item-body">
+          <div class="list-item-title">Indicadores</div>
+          <div class="list-item-meta">Crear, editar y eliminar</div>
+        </div>
+        <div class="arrow">›</div>
+      </button>
     </div>
     ${total === 0 ? `
-      <div style="margin-top:32px;padding:20px;background:var(--accent-soft);border-radius:16px;">
+      <div style="margin-top:24px;padding:20px;background:var(--accent-soft);border-radius:16px;">
         <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:4px">Comenzá tu primera evaluación</div>
         <div style="font-size:13px;color:var(--accent);opacity:0.85;line-height:1.5">Elegí un indicador y registrá el desempeño de cada estudiante en pocos toques.</div>
       </div>
@@ -483,7 +603,8 @@ function renderHome() {
 
 function renderSetup() {
   const s = state.setup;
-  const canStart = s.curso && s.area && s.indicador != null;
+  const indicators = DB.getIndicators();
+  const canStart = s.curso && s.area && s.indicadorId != null;
   return `
     ${renderTopbar({ back: true, title: 'Nueva evaluación' })}
     <div style="margin-bottom: 24px;">
@@ -513,15 +634,26 @@ function renderSetup() {
       </div>
     </div>
     <div style="margin-bottom: 20px; flex:1; min-height:0; display:flex; flex-direction:column;">
-      <div style="font-size:13px;font-weight:600;color:var(--text-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">Indicador</div>
-      <div class="indicator-list">
-        ${INDICADORES.map((ind, i) => `
-          <button class="indicator-item ${s.indicador === i ? 'selected' : ''}" data-action="set-indicador" data-value="${i}">
-            <span class="indicator-num">${String(i + 1).padStart(2, '0')}</span>
-            <span class="indicator-text">${esc(ind)}</span>
-          </button>
-        `).join('')}
+      <div style="font-size:13px;font-weight:600;color:var(--text-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;display:flex;justify-content:space-between;align-items:center">
+        <span>Indicador</span>
+        <button class="btn-ghost" data-action="manage-indicators" style="font-size:12px;padding:4px 8px;border-radius:6px;text-transform:none;letter-spacing:0">Gestionar</button>
       </div>
+      ${indicators.length === 0 ? `
+        <div class="empty">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">Sin indicadores</div>
+          <div class="empty-text">Creá uno desde "Gestionar".</div>
+        </div>
+      ` : `
+        <div class="indicator-list">
+          ${indicators.map((ind, i) => `
+            <button class="indicator-item ${s.indicadorId === ind.id ? 'selected' : ''}" data-action="set-indicador" data-value="${esc(ind.id)}">
+              <span class="indicator-num">${String(i + 1).padStart(2, '0')}</span>
+              <span class="indicator-text">${esc(ind.text)}</span>
+            </button>
+          `).join('')}
+        </div>
+      `}
     </div>
     <button class="btn btn-primary btn-lg" data-action="start-eval" ${canStart ? '' : 'disabled'}>
       Comenzar evaluación
@@ -538,6 +670,7 @@ function renderEvaluation() {
   const completedCount = ev.records.filter(r => r.valoracion).length;
   const progress = Math.round((completedCount / total) * 100);
   const obsOpen = rec.observacion && rec.observacion.length > 0;
+  const indInfo = resolveIndicator(ev);
 
   return `
     ${renderTopbar({
@@ -545,8 +678,8 @@ function renderEvaluation() {
       title: `${esc(ev.curso)} · ${esc(ev.area)}`,
       right: `<button class="btn-ghost" data-action="finish-eval" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600">Resumen</button>`
     })}
-    <div class="indicator-pill">Indicador ${INDICADORES.indexOf(ev.indicador) + 1}</div>
-    <div style="font-size:14px;color:var(--text-soft);line-height:1.45;margin-bottom:20px;font-weight:500">${esc(ev.indicador)}</div>
+    <div class="indicator-pill">${esc(indNumLabel(ev))}</div>
+    <div style="font-size:14px;color:var(--text-soft);line-height:1.45;margin-bottom:20px;font-weight:500">${esc(indInfo.text)}</div>
 
     <div class="progress-wrap">
       <div class="progress-meta">
@@ -599,11 +732,12 @@ function renderSummary() {
   const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
   ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
   const observations = ev.records.filter(r => r.observacion && r.observacion.trim());
+  const indInfo = resolveIndicator(ev);
 
   return `
     ${renderTopbar({ back: true, title: 'Resumen', right: `<button class="btn-ghost" data-action="goto-home" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600">Inicio</button>` })}
-    <div class="indicator-pill">Indicador ${INDICADORES.indexOf(ev.indicador) + 1}</div>
-    <div style="font-size:15px;color:var(--text);line-height:1.4;margin-bottom:6px;font-weight:600">${esc(ev.indicador)}</div>
+    <div class="indicator-pill">${esc(indNumLabel(ev))}</div>
+    <div style="font-size:15px;color:var(--text);line-height:1.4;margin-bottom:6px;font-weight:600">${esc(indInfo.text)}</div>
     <div style="font-size:13px;color:var(--text-mute);margin-bottom:24px">${esc(ev.curso)} · ${esc(ev.area)} · ${formatDate(ev.date)}</div>
 
     <div class="summary-grid">
@@ -660,11 +794,20 @@ function renderHistory() {
   const filtered = all.filter(ev => {
     if (f.type === 'all') return true;
     if (f.type === 'student') return ev.records.some(r => r.alumno === f.value && r.valoracion);
-    if (f.type === 'indicador') return ev.indicador === f.value;
+    if (f.type === 'indicador') return (ev.indicadorId && ev.indicadorId === f.value) || ev.indicador === f.value;
     return true;
   });
 
-  const indicadorChips = [...new Set(all.map(e => e.indicador))];
+  const usedIndicatorIds = new Set();
+  const indicatorChips = [];
+  all.forEach(e => {
+    const info = resolveIndicator(e);
+    if (info.exists && info.id && !usedIndicatorIds.has(info.id)) {
+      usedIndicatorIds.add(info.id);
+      indicatorChips.push({ id: info.id, number: info.number });
+    }
+  });
+  indicatorChips.sort((a, b) => a.number - b.number);
 
   return `
     ${renderTopbar({ back: true, title: 'Historial' })}
@@ -678,13 +821,10 @@ function renderHistory() {
       `).join('')}
     </div>
 
-    ${indicadorChips.length > 0 ? `
+    ${indicatorChips.length > 0 ? `
       <div style="font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:8px;margin-top:8px;text-transform:uppercase;letter-spacing:0.04em">Por indicador</div>
       <div class="filter-bar">
-        ${indicadorChips.map((ind) => {
-          const num = INDICADORES.indexOf(ind) + 1;
-          return `<button class="filter-chip ${f.type === 'indicador' && f.value === ind ? 'active' : ''}" data-action="filter-indicador" data-value="${esc(ind)}">Ind. ${num}</button>`;
-        }).join('')}
+        ${indicatorChips.map(c => `<button class="filter-chip ${f.type === 'indicador' && f.value === c.id ? 'active' : ''}" data-action="filter-indicador" data-value="${esc(c.id)}">Ind. ${c.number}</button>`).join('')}
       </div>
     ` : ''}
 
@@ -700,11 +840,11 @@ function renderHistory() {
           ${filtered.map(ev => {
             const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
             ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
-            const num = INDICADORES.indexOf(ev.indicador) + 1;
+            const info = resolveIndicator(ev);
             return `
               <button class="history-item" data-action="open-history" data-id="${esc(ev.id)}">
-                <div class="history-date">${formatDate(ev.date)} · ${esc(ev.curso)} · ${esc(ev.area)} · Ind. ${num}</div>
-                <div class="history-indicator">${esc(ev.indicador)}</div>
+                <div class="history-date">${formatDate(ev.date)} · ${esc(ev.curso)} · ${esc(ev.area)} · ${esc(indNumLabel(ev))}</div>
+                <div class="history-indicator">${esc(info.text)}</div>
                 <div class="history-stats">
                   ${VALORACIONES.map(v => counts[v.id] > 0 ? `<span class="history-stat"><span class="val-dot" style="background:${v.color}"></span>${counts[v.id]}</span>` : '').join('')}
                 </div>
@@ -726,6 +866,159 @@ function renderHistoryDetail() {
   );
 }
 
+function renderManageIndicators() {
+  const indicators = DB.getIndicators();
+  const editState = state.indicatorEdit;
+
+  return `
+    ${renderTopbar({ back: true, title: 'Indicadores' })}
+    <div class="h2" style="margin-bottom: 6px">Gestión de indicadores</div>
+    <p class="lead">Creá, editá o eliminá los indicadores que usás para evaluar.</p>
+
+    ${editState.adding ? `
+      <div class="add-indicator-card">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.04em">Nuevo indicador</div>
+        <textarea class="input" id="new-indicator-input" rows="3" placeholder="Escribí el indicador...">${esc(editState.draft)}</textarea>
+        <div class="manage-edit-actions">
+          <button class="btn btn-secondary" data-action="cancel-add">Cancelar</button>
+          <button class="btn btn-primary" data-action="save-add">Guardar</button>
+        </div>
+      </div>
+    ` : `
+      <button class="add-indicator-btn" data-action="start-add">
+        <span class="plus">+</span>
+        <span>Nuevo indicador</span>
+      </button>
+    `}
+
+    <div class="list">
+      ${indicators.length === 0 ? `
+        <div class="empty">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">Sin indicadores</div>
+          <div class="empty-text">Tocá "Nuevo indicador" para crear el primero.</div>
+        </div>
+      ` : indicators.map((ind, i) => {
+        const isEditing = editState.editingId === ind.id;
+        if (isEditing) {
+          return `
+            <div class="manage-item">
+              <span class="indicator-num">${String(i + 1).padStart(2, '0')}</span>
+              <div class="manage-edit">
+                <textarea class="input" id="edit-indicator-input" rows="3">${esc(editState.draft)}</textarea>
+                <div class="manage-edit-actions">
+                  <button class="btn btn-secondary" data-action="cancel-edit">Cancelar</button>
+                  <button class="btn btn-primary" data-action="save-edit" data-value="${esc(ind.id)}">Guardar</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="manage-item">
+            <span class="indicator-num">${String(i + 1).padStart(2, '0')}</span>
+            <div class="manage-text">${esc(ind.text)}</div>
+            <div class="manage-actions">
+              <button class="icon-btn" data-action="start-edit" data-value="${esc(ind.id)}" aria-label="Editar">✎</button>
+              <button class="icon-btn danger" data-action="delete-indicator" data-value="${esc(ind.id)}" aria-label="Eliminar">×</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderStudents() {
+  const indicators = DB.getIndicators();
+  const allEvals = DB.getEvaluations();
+  const evalsByIndId = {};
+  allEvals.forEach(ev => {
+    const info = resolveIndicator(ev);
+    const key = info.exists ? info.id : `__missing__${ev.indicador || ev.id}`;
+    if (!evalsByIndId[key]) evalsByIndId[key] = [];
+    evalsByIndId[key].push(ev);
+  });
+  Object.values(evalsByIndId).forEach(arr => arr.sort((a, b) => new Date(b.date) - new Date(a.date)));
+
+  function latestForStudent(student, indId) {
+    const arr = evalsByIndId[indId] || [];
+    for (const ev of arr) {
+      const rec = ev.records.find(r => r.alumno === student);
+      if (rec && rec.valoracion) {
+        return { val: rec.valoracion, date: ev.date, obs: rec.observacion };
+      }
+    }
+    return null;
+  }
+
+  return `
+    ${renderTopbar({
+      back: true,
+      title: 'Alumnos',
+      right: `<button class="btn-ghost" data-action="export-csv" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600">Exportar</button>`
+    })}
+    <div class="h2" style="margin-bottom: 6px">Alumnos</div>
+    <p class="lead">Última valoración por indicador.</p>
+
+    <div class="toolbar">
+      <button class="btn btn-secondary" data-action="export-csv">⬇ Exportar CSV</button>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="dot logrado"></span>Logrado</span>
+      <span class="legend-item"><span class="dot proceso"></span>En proceso</span>
+      <span class="legend-item"><span class="dot apoyo"></span>Necesita apoyo</span>
+      <span class="legend-item"><span class="dot empty"></span>Sin evaluar</span>
+    </div>
+
+    ${indicators.length === 0 ? `
+      <div class="empty">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">Sin indicadores</div>
+        <div class="empty-text">Creá indicadores para empezar a evaluar.</div>
+      </div>
+    ` : `
+      <div class="students-list">
+        ${STUDENTS.map(student => {
+          const expanded = state.expandedStudent === student;
+          const cells = indicators.map(ind => {
+            const last = latestForStudent(student, ind.id);
+            return { ind, last };
+          });
+          return `
+            <div class="student-row ${expanded ? 'expanded' : ''}">
+              <button class="student-row-head" data-action="toggle-student" data-value="${esc(student)}">
+                <div class="student-row-name">
+                  <span>${esc(student)}</span>
+                  <span class="chev">▼</span>
+                </div>
+                <div class="dot-row">
+                  ${cells.map(c => `<span class="dot ${c.last ? c.last.val : 'empty'}" title="${esc(c.ind.text)}${c.last ? ' — ' + esc(VAL_MAP[c.last.val].label) : ''}"></span>`).join('')}
+                </div>
+              </button>
+              ${expanded ? `
+                <div class="student-detail">
+                  ${cells.map((c, i) => `
+                    <div class="student-detail-row">
+                      <span class="val-dot ${c.last ? c.last.val : 'empty'}"></span>
+                      <div class="student-detail-body">
+                        <div class="student-detail-ind">${String(i + 1).padStart(2, '0')}. ${esc(c.ind.text)}</div>
+                        <div class="student-detail-meta">${c.last ? `${esc(VAL_MAP[c.last.val].label)} · ${formatDateShort(c.last.date)}` : 'Sin evaluar'}</div>
+                        ${c.last && c.last.obs && c.last.obs.trim() ? `<div class="student-detail-obs">${esc(c.last.obs)}</div>` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `}
+  `;
+}
+
 /* ============================================================
  * EVENT HANDLERS
  * ============================================================ */
@@ -739,6 +1032,17 @@ function attachHandlers() {
     obsInput.addEventListener('input', onObsInput);
     obsInput.addEventListener('blur', onObsBlur);
   }
+
+  const newInd = $('new-indicator-input');
+  if (newInd) {
+    newInd.addEventListener('input', e => { state.indicatorEdit.draft = e.target.value; });
+    setTimeout(() => newInd.focus(), 60);
+  }
+  const editInd = $('edit-indicator-input');
+  if (editInd) {
+    editInd.addEventListener('input', e => { state.indicatorEdit.draft = e.target.value; });
+    setTimeout(() => { editInd.focus(); editInd.setSelectionRange(editInd.value.length, editInd.value.length); }, 60);
+  }
 }
 
 function onAction(e) {
@@ -749,17 +1053,25 @@ function onAction(e) {
   switch (action) {
     case 'back': return goBack();
     case 'new-eval':
-      state.setup = { curso: CURSOS[0], area: AREAS[0], indicador: null };
+      state.setup = { curso: CURSOS[0], area: AREAS[0], indicadorId: null };
       showScreen('setup');
       return;
     case 'history':
       state.historyFilter = { type: 'all', value: null };
       showScreen('history');
       return;
+    case 'students':
+      state.expandedStudent = null;
+      showScreen('students');
+      return;
+    case 'manage-indicators':
+      state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+      showScreen('manage-indicators');
+      return;
     case 'set-curso': state.setup.curso = value; render(); return;
     case 'set-area': state.setup.area = value; render(); return;
     case 'set-indicador':
-      state.setup.indicador = parseInt(value, 10);
+      state.setup.indicadorId = value;
       render();
       return;
     case 'start-eval': return startEvaluation();
@@ -808,16 +1120,68 @@ function onAction(e) {
         navigate('history');
       }
       return;
+    case 'start-add':
+      state.indicatorEdit = { editingId: null, adding: true, draft: '' };
+      render();
+      return;
+    case 'cancel-add':
+      state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+      render();
+      return;
+    case 'save-add': {
+      const text = (state.indicatorEdit.draft || '').trim();
+      if (!text) { toast('Escribí el indicador'); return; }
+      DB.addIndicator(text);
+      state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+      toast('Indicador creado');
+      render();
+      return;
+    }
+    case 'start-edit': {
+      const ind = DB.getIndicators().find(i => i.id === value);
+      state.indicatorEdit = { editingId: value, adding: false, draft: ind ? ind.text : '' };
+      render();
+      return;
+    }
+    case 'cancel-edit':
+      state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+      render();
+      return;
+    case 'save-edit': {
+      const text = (state.indicatorEdit.draft || '').trim();
+      if (!text) { toast('El texto no puede quedar vacío'); return; }
+      DB.updateIndicator(value, text);
+      state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+      toast('Indicador actualizado');
+      render();
+      return;
+    }
+    case 'delete-indicator':
+      if (confirm('¿Eliminar este indicador? Las evaluaciones existentes mantendrán su texto histórico.')) {
+        DB.deleteIndicator(value);
+        toast('Indicador eliminado');
+        render();
+      }
+      return;
+    case 'toggle-student':
+      state.expandedStudent = state.expandedStudent === value ? null : value;
+      render();
+      return;
+    case 'export-csv':
+      return exportCSV();
   }
 }
 
 function startEvaluation() {
   const s = state.setup;
-  if (s.indicador == null) return;
+  if (s.indicadorId == null) return;
+  const ind = DB.getIndicators().find(i => i.id === s.indicadorId);
+  if (!ind) { toast('Indicador no encontrado'); return; }
   const ev = DB.createEvaluation({
     curso: s.curso,
     area: s.area,
-    indicador: INDICADORES[s.indicador]
+    indicadorId: ind.id,
+    indicador: ind.text
   });
   state.currentEval = ev;
   state.studentIdx = 0;
@@ -830,13 +1194,11 @@ function setValoracion(val) {
   rec.valoracion = val;
   DB.updateRecord(ev.id, rec.alumno, { valoracion: val });
   toast(`Guardado: ${VAL_MAP[val].label}`);
-  // Update UI without full re-render for snappy feel
   document.querySelectorAll('.val-btn').forEach(b => {
     b.classList.toggle('selected', b.dataset.value === val);
   });
   const meta = document.querySelector('.student-meta');
   if (meta) meta.textContent = VAL_MAP[val].label;
-  // Update progress
   const completed = ev.records.filter(r => r.valoracion).length;
   const total = ev.records.length;
   const pct = Math.round((completed / total) * 100);
@@ -877,6 +1239,60 @@ function onObsBlur() {
   const ev = state.currentEval;
   const rec = ev.records[state.studentIdx];
   DB.updateRecord(ev.id, rec.alumno, { observacion: rec.observacion });
+}
+
+/* ============================================================
+ * CSV EXPORT
+ * ============================================================ */
+function csvEscape(val) {
+  if (val == null) return '';
+  const s = String(val);
+  if (/[",\n\r]/.test(s)) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function exportCSV() {
+  const evals = DB.getEvaluations();
+  const rows = [];
+  evals.forEach(ev => {
+    const info = resolveIndicator(ev);
+    ev.records.forEach(rec => {
+      if (!rec.valoracion) return;
+      rows.push([
+        rec.alumno,
+        info.text,
+        VAL_MAP[rec.valoracion]?.label || rec.valoracion,
+        rec.observacion || '',
+        formatDate(ev.date)
+      ]);
+    });
+  });
+
+  if (rows.length === 0) {
+    toast('Sin datos para exportar');
+    return;
+  }
+
+  rows.sort((a, b) => a[0].localeCompare(b[0], 'es'));
+
+  const header = ['Alumno', 'Indicador', 'Valoración', 'Observación', 'Fecha'];
+  const csvLines = [header, ...rows].map(r => r.map(csvEscape).join(','));
+  const csv = '﻿' + csvLines.join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const fname = `evaluar_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.csv`;
+  a.href = url;
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast(`Exportado: ${rows.length} filas`);
 }
 
 /* ============================================================
