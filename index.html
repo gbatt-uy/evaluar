@@ -22,6 +22,7 @@
     --accent-soft: #ede9fe;
     --logrado: #10b981;
     --proceso: #f59e0b;
+    --intermedio: #f97316;
     --apoyo: #ef4444;
     --noeval: #9ca3af;
     --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
@@ -128,6 +129,28 @@
   .val-btn.selected[data-val="apoyo"] { background: var(--apoyo); border-color: var(--apoyo); color: white; }
   .val-btn.selected[data-val="noeval"] { background: var(--noeval); border-color: var(--noeval); color: white; }
   .val-btn.selected .val-dot { background: white; }
+
+  .eval-section-label { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .eval-divider { height: 1px; background: var(--border); margin: 18px 0 16px; }
+
+  .nota-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+  .nota-btn { aspect-ratio: 1; width: 100%; max-width: 56px; justify-self: center; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border: 2px solid var(--border); background: var(--surface); color: var(--text-soft); transition: transform .08s ease, background .15s ease, color .15s ease, border-color .15s ease; min-width: 40px; min-height: 40px; padding: 0; }
+  .nota-btn:active { transform: scale(0.9); }
+  .nota-btn[data-range="logrado"] { color: var(--logrado); border-color: rgba(16, 185, 129, 0.35); }
+  .nota-btn[data-range="proceso"] { color: var(--proceso); border-color: rgba(245, 158, 11, 0.35); }
+  .nota-btn[data-range="intermedio"] { color: var(--intermedio); border-color: rgba(249, 115, 22, 0.35); }
+  .nota-btn[data-range="apoyo"] { color: var(--apoyo); border-color: rgba(239, 68, 68, 0.35); }
+  .nota-btn.selected { color: white; }
+  .nota-btn.selected[data-range="logrado"] { background: var(--logrado); border-color: var(--logrado); }
+  .nota-btn.selected[data-range="proceso"] { background: var(--proceso); border-color: var(--proceso); }
+  .nota-btn.selected[data-range="intermedio"] { background: var(--intermedio); border-color: var(--intermedio); }
+  .nota-btn.selected[data-range="apoyo"] { background: var(--apoyo); border-color: var(--apoyo); }
+
+  .nota-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 22px; border-radius: 11px; background: var(--surface-alt); font-size: 12px; font-weight: 700; padding: 0 7px; color: var(--text-soft); margin-left: 6px; }
+  .nota-badge.logrado { background: var(--logrado); color: white; }
+  .nota-badge.proceso { background: var(--proceso); color: white; }
+  .nota-badge.intermedio { background: var(--intermedio); color: white; }
+  .nota-badge.apoyo { background: var(--apoyo); color: white; }
 
   .obs-section { margin-top: 4px; margin-bottom: 18px; }
   .obs-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; font-weight: 500; color: var(--text-soft); font-size: 14px; min-height: 48px; }
@@ -346,6 +369,20 @@ const VALORACIONES = [
 
 const VAL_MAP = Object.fromEntries(VALORACIONES.map(v => [v.id, v]));
 
+function notaToVal(n) {
+  if (n >= 9) return 'logrado';
+  if (n >= 7) return 'proceso';
+  if (n >= 5) return 'proceso';
+  return 'apoyo';
+}
+
+function notaRange(n) {
+  if (n >= 9) return 'logrado';
+  if (n >= 7) return 'proceso';
+  if (n >= 5) return 'intermedio';
+  return 'apoyo';
+}
+
 /* ============================================================
  * UTILS
  * ============================================================ */
@@ -452,7 +489,7 @@ const DB = {
       indicadorId: meta.indicadorId,
       indicador: meta.indicador,
       bimestre: meta.bimestre || currentBimestre(),
-      records: STUDENTS.map(name => ({ alumno: name, valoracion: null, observacion: '' }))
+      records: STUDENTS.map(name => ({ alumno: name, valoracion: null, observacion: '', nota_numerica: null }))
     };
     data.evaluations.unshift(evalu);
     this.save(data);
@@ -732,15 +769,25 @@ function renderEvaluation() {
 
     <div class="student-card">
       <div class="student-name">${esc(rec.alumno)}</div>
-      <div class="student-meta">${rec.valoracion ? esc(VAL_MAP[rec.valoracion].label) : 'Sin evaluar'}</div>
+      <div class="student-meta">${rec.valoracion ? esc(VAL_MAP[rec.valoracion].label) : 'Sin evaluar'}${rec.nota_numerica != null ? ` · Nota ${rec.nota_numerica}` : ''}</div>
     </div>
 
+    <div class="eval-section-label">Valoración</div>
     <div class="valoracion-group">
       ${VALORACIONES.map(v => `
-        <button class="val-btn ${rec.valoracion === v.id ? 'selected' : ''}" data-action="set-val" data-value="${v.id}" data-val="${v.id}">
+        <button class="val-btn ${rec.valoracion === v.id && rec.nota_numerica == null ? 'selected' : ''}" data-action="set-val" data-value="${v.id}" data-val="${v.id}">
           <span class="val-dot"></span>
           <span>${esc(v.label)}</span>
         </button>
+      `).join('')}
+    </div>
+
+    <div class="eval-divider"></div>
+
+    <div class="eval-section-label">Nota</div>
+    <div class="nota-group">
+      ${Array.from({length: 10}, (_, i) => i + 1).map(n => `
+        <button class="nota-btn ${rec.nota_numerica === n ? 'selected' : ''}" data-action="set-nota" data-value="${n}" data-range="${notaRange(n)}" aria-label="Nota ${n}">${n}</button>
       `).join('')}
     </div>
 
@@ -815,7 +862,7 @@ function renderSummary() {
       <div class="obs-list">
         ${observations.map(r => `
           <div class="obs-item">
-            <div class="obs-item-name">${esc(r.alumno)}</div>
+            <div class="obs-item-name">${esc(r.alumno)}${r.valoracion ? ` · <span style="font-weight:500;color:${esc(VAL_MAP[r.valoracion].color)}">${esc(VAL_MAP[r.valoracion].label)}</span>` : ''}${r.nota_numerica != null ? ` <span class="nota-badge ${notaRange(r.nota_numerica)}">${r.nota_numerica}</span>` : ''}</div>
             <div class="obs-item-text">${esc(r.observacion)}</div>
           </div>
         `).join('')}
@@ -987,7 +1034,7 @@ function renderStudents() {
     for (const ev of arr) {
       const rec = ev.records.find(r => r.alumno === student);
       if (rec && rec.valoracion) {
-        return { val: rec.valoracion, date: ev.date, obs: rec.observacion };
+        return { val: rec.valoracion, date: ev.date, obs: rec.observacion, nota: rec.nota_numerica };
       }
     }
     return null;
@@ -1045,7 +1092,7 @@ function renderStudents() {
                       <span class="val-dot ${c.last ? c.last.val : 'empty'}"></span>
                       <div class="student-detail-body">
                         <div class="student-detail-ind">${String(i + 1).padStart(2, '0')}. ${esc(c.ind.text)}</div>
-                        <div class="student-detail-meta">${c.last ? `${esc(VAL_MAP[c.last.val].label)} · ${formatDateShort(c.last.date)}` : 'Sin evaluar'}</div>
+                        <div class="student-detail-meta">${c.last ? `${esc(VAL_MAP[c.last.val].label)}${c.last.nota != null ? ` <span class="nota-badge ${notaRange(c.last.nota)}">${c.last.nota}</span>` : ''} · ${formatDateShort(c.last.date)}` : 'Sin evaluar'}</div>
                         ${c.last && c.last.obs && c.last.obs.trim() ? `<div class="student-detail-obs">${esc(c.last.obs)}</div>` : ''}
                       </div>
                     </div>
@@ -1175,6 +1222,7 @@ function onAction(e) {
       return;
     case 'start-eval': return startEvaluation();
     case 'set-val': return setValoracion(value);
+    case 'set-nota': return setNota(parseInt(value, 10));
     case 'prev-student':
       if (state.studentIdx > 0) {
         state.studentIdx--;
@@ -1380,13 +1428,38 @@ function setValoracion(val) {
   const ev = state.currentEval;
   const rec = ev.records[state.studentIdx];
   rec.valoracion = val;
-  DB.updateRecord(ev.id, rec.alumno, { valoracion: val });
+  rec.nota_numerica = null;
+  DB.updateRecord(ev.id, rec.alumno, { valoracion: val, nota_numerica: null });
   toast(`Guardado: ${VAL_MAP[val].label}`);
   document.querySelectorAll('.val-btn').forEach(b => {
     b.classList.toggle('selected', b.dataset.value === val);
   });
+  document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('selected'));
   const meta = document.querySelector('.student-meta');
   if (meta) meta.textContent = VAL_MAP[val].label;
+  updateProgress();
+}
+
+function setNota(n) {
+  if (!(n >= 1 && n <= 10)) return;
+  const ev = state.currentEval;
+  const rec = ev.records[state.studentIdx];
+  const val = notaToVal(n);
+  rec.nota_numerica = n;
+  rec.valoracion = val;
+  DB.updateRecord(ev.id, rec.alumno, { valoracion: val, nota_numerica: n });
+  toast(`Guardado: ${n} (${VAL_MAP[val].label})`);
+  document.querySelectorAll('.nota-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.value, 10) === n);
+  });
+  document.querySelectorAll('.val-btn').forEach(b => b.classList.remove('selected'));
+  const meta = document.querySelector('.student-meta');
+  if (meta) meta.textContent = `${VAL_MAP[val].label} · Nota ${n}`;
+  updateProgress();
+}
+
+function updateProgress() {
+  const ev = state.currentEval;
   const completed = ev.records.filter(r => r.valoracion).length;
   const total = ev.records.length;
   const pct = Math.round((completed / total) * 100);
@@ -1452,6 +1525,7 @@ function exportCSV() {
         rec.alumno,
         info.text,
         VAL_MAP[rec.valoracion]?.label || rec.valoracion,
+        rec.nota_numerica != null ? rec.nota_numerica : '',
         rec.observacion || '',
         formatDate(ev.date)
       ]);
@@ -1465,7 +1539,7 @@ function exportCSV() {
 
   rows.sort((a, b) => a[0].localeCompare(b[0], 'es'));
 
-  const header = ['Alumno', 'Indicador', 'Valoración', 'Observación', 'Fecha'];
+  const header = ['Alumno', 'Indicador', 'Valoración', 'Nota', 'Observación', 'Fecha'];
   const csvLines = [header, ...rows].map(r => r.map(csvEscape).join(','));
   const csv = '﻿' + csvLines.join('\r\n');
 
