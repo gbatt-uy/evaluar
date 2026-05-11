@@ -376,11 +376,11 @@ function currentBimestre() {
 /* ============================================================
  * AUTH (Supabase OTP)
  * ============================================================ */
-let supabase = null;
+let sbClient = null;
 const AUTH = {
   async init() {
     try {
-      supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+      sbClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
     } catch (e) {
       console.warn('Supabase init failed', e);
     }
@@ -390,9 +390,9 @@ const AUTH = {
     if (cached) {
       try { return JSON.parse(cached); } catch (e) {}
     }
-    if (!supabase) return null;
+    if (!sbClient) return null;
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await sbClient.auth.getSession();
       if (data?.session) {
         const sess = { email: data.session.user.email, ts: Date.now() };
         localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(sess));
@@ -402,16 +402,16 @@ const AUTH = {
     return null;
   },
   async sendOtp(email) {
-    if (!supabase) throw new Error('Supabase no disponible');
-    const { error } = await supabase.auth.signInWithOtp({
+    if (!sbClient) throw new Error('Supabase no disponible');
+    const { error } = await sbClient.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: true }
     });
     if (error) throw error;
   },
   async verifyOtp(email, token) {
-    if (!supabase) throw new Error('Supabase no disponible');
-    const { data, error } = await supabase.auth.verifyOtp({
+    if (!sbClient) throw new Error('Supabase no disponible');
+    const { data, error } = await sbClient.auth.verifyOtp({
       email,
       token,
       type: 'email'
@@ -422,8 +422,8 @@ const AUTH = {
     return sess;
   },
   async signOut() {
-    if (supabase) {
-      try { await supabase.auth.signOut(); } catch (e) {}
+    if (sbClient) {
+      try { await sbClient.auth.signOut(); } catch (e) {}
     }
     localStorage.removeItem(CONFIG.SESSION_KEY);
   }
