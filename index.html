@@ -339,27 +339,6 @@ let STUDENTS = loadStudents();
 const CURSOS = ['4° Grado'];
 const AREAS = ['Lengua'];
 
-const DEFAULT_INDICATORS_TEXT = [
-  'Lee textos narrativos con fluidez y entonación adecuada',
-  'Comprende el sentido global de un texto leído',
-  'Identifica personajes, lugar y tiempo en una narración',
-  'Reconoce la estructura del texto narrativo (inicio, nudo, desenlace)',
-  'Distingue entre texto literario y no literario',
-  'Produce textos narrativos breves con coherencia',
-  'Usa correctamente mayúsculas al inicio de oraciones y nombres propios',
-  'Aplica reglas de acentuación en palabras agudas, graves y esdrújulas',
-  'Reconoce sustantivos comunes y propios',
-  'Identifica adjetivos calificativos en oraciones',
-  'Conjuga verbos en presente, pasado y futuro',
-  'Usa correctamente los signos de puntuación (punto, coma, signos de exclamación e interrogación)',
-  'Construye oraciones con sujeto y predicado claros',
-  'Amplía su vocabulario incorporando sinónimos y antónimos',
-  'Expresa opiniones de forma oral con claridad',
-  'Escucha con atención y respeta el turno de palabra',
-  'Realiza inferencias a partir de textos leídos',
-  'Revisa y corrige sus propios escritos'
-];
-
 const VALORACIONES = [
   { id: 'logrado', label: 'Logrado', color: '#10b981' },
   { id: 'proceso', label: 'En proceso', color: '#f59e0b' },
@@ -442,9 +421,7 @@ const DB = {
       data = {};
     }
     if (!Array.isArray(data.evaluations)) data.evaluations = [];
-    if (!Array.isArray(data.indicators) || data.indicators.length === 0) {
-      data.indicators = DEFAULT_INDICATORS_TEXT.map(text => ({ id: uid(), text }));
-    }
+    if (!Array.isArray(data.indicators)) data.indicators = [];
     return data;
   },
   save(data) {
@@ -1082,7 +1059,7 @@ function renderStudents() {
                   <span class="chev">▼</span>
                 </div>
                 <div class="dot-row">
-                  ${cells.map(c => `<span class="dot ${c.last ? c.last.val : 'empty'}" title="${esc(c.ind.text)}${c.last ? ' — ' + esc(VAL_MAP[c.last.val].label) : ''}"></span>`).join('')}
+                  ${cells.filter(c => c.last).map(c => `<span class="dot ${c.last.val}" title="${esc(c.ind.text)} — ${esc(VAL_MAP[c.last.val].label)}"></span>`).join('')}
                 </div>
               </button>
               ${expanded ? `
