@@ -255,6 +255,15 @@
   .toolbar { display: flex; gap: 8px; margin-bottom: 14px; }
   .toolbar .btn { flex: 1; min-height: 44px; padding: 10px 14px; font-size: 14px; }
 
+  /* Bulk student import / management */
+  .student-edit-item { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .student-edit-item .input { flex: 1; min-height: 48px; padding: 12px 14px; font-size: 15px; }
+  .single-add-row { display: flex; gap: 8px; }
+  .single-add-row .input { flex: 1; }
+  .single-add-row .btn { width: auto; min-width: 56px; padding: 0 18px; }
+  .section-head { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .help-text { font-size: 13px; color: var(--text-soft); line-height: 1.45; margin-bottom: 12px; }
+
   @media (max-width: 360px) {
     .h1 { font-size: 26px; }
     .student-name { font-size: 24px; }
@@ -272,13 +281,37 @@
  * ============================================================ */
 const CONFIG = {
   STORAGE_KEY: 'evaluar_v1',
+  STUDENTS_KEY: 'evaluar_students_v1',
 };
 
-const STUDENTS = [
+const DEFAULT_STUDENTS = [
   'Sofía Martínez', 'Tomás García', 'Valentina López', 'Mateo Rodríguez',
   'Camila Fernández', 'Santiago Pérez', 'Isabella González', 'Benjamín Díaz',
   'Lucía Torres', 'Joaquín Ramírez'
 ];
+
+function loadStudents() {
+  try {
+    const raw = localStorage.getItem(CONFIG.STUDENTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter(s => typeof s === 'string' && s.trim()).map(s => s.trim());
+    }
+  } catch (e) {}
+  return [...DEFAULT_STUDENTS];
+}
+
+function saveStudents(arr) {
+  STUDENTS.length = 0;
+  STUDENTS.push(...arr);
+  localStorage.setItem(CONFIG.STUDENTS_KEY, JSON.stringify(STUDENTS));
+}
+
+function parseStudentList(text) {
+  return text.split(/[\n\r]+/).map(s => s.trim()).filter(s => s.length > 0);
+}
+
+let STUDENTS = loadStudents();
 
 const CURSOS = ['4° Grado'];
 const AREAS = ['Lengua'];
@@ -522,6 +555,7 @@ function render(dir) {
     case 'history-detail': html = renderHistoryDetail(); break;
     case 'manage-indicators': html = renderManageIndicators(); break;
     case 'students': html = renderStudents(); break;
+    case 'manage-students': html = renderManageStudents(); break;
     default: html = renderHome();
   }
   const cls = dir === 'left' ? 'slide-in-left' : dir === 'right' ? 'slide-in-right' : '';
@@ -588,6 +622,13 @@ function renderHome() {
         <div class="list-item-body">
           <div class="list-item-title">Indicadores</div>
           <div class="list-item-meta">Crear, editar y eliminar</div>
+        </div>
+        <div class="arrow">›</div>
+      </button>
+      <button class="list-item" data-action="manage-students">
+        <div class="list-item-body">
+          <div class="list-item-title">Cargar alumnos</div>
+          <div class="list-item-meta">${STUDENTS.length} ${STUDENTS.length === 1 ? 'alumno' : 'alumnos'} · agregar o editar</div>
         </div>
         <div class="arrow">›</div>
       </button>
@@ -1019,6 +1060,54 @@ function renderStudents() {
   `;
 }
 
+function renderManageStudents() {
+  return `
+    ${renderTopbar({ back: true, title: 'Cargar alumnos' })}
+    <div style="margin-bottom: 20px;">
+      <div class="h2">Alumnos</div>
+      <p class="lead" style="margin-bottom:0">${STUDENTS.length} ${STUDENTS.length === 1 ? 'alumno' : 'alumnos'} en tu lista</p>
+    </div>
+
+    <div class="card" style="margin-bottom: 14px;">
+      <div class="section-head">Carga masiva</div>
+      <p class="help-text">Pegá una lista de alumnos, uno por línea (Nombre Apellido).</p>
+      <textarea class="input" id="bulk-input" rows="6" placeholder="Sofía Martínez&#10;Tomás García&#10;Valentina López..."></textarea>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+        <button class="btn btn-primary" data-action="bulk-replace">Guardar lista (reemplazar)</button>
+        <button class="btn btn-secondary" data-action="bulk-add">Agregar a la lista</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 18px;">
+      <div class="section-head">Agregar uno</div>
+      <form id="single-add-form" class="single-add-row" novalidate>
+        <input class="input" id="single-input" placeholder="Nombre Apellido" autocomplete="off">
+        <button type="submit" class="btn btn-primary">+</button>
+      </form>
+    </div>
+
+    <div class="section-head">Lista actual</div>
+    ${STUDENTS.length === 0 ? `
+      <div class="empty">
+        <div class="empty-icon">👤</div>
+        <div class="empty-title">Sin alumnos</div>
+        <div class="empty-text">Agregá alumnos para empezar a evaluar.</div>
+      </div>
+    ` : `
+      <div style="margin-bottom: 8px;">
+        ${STUDENTS.map((s, i) => `
+          <div class="student-edit-item">
+            <input class="input student-name-input" data-idx="${i}" value="${esc(s)}" aria-label="Nombre del alumno ${i + 1}">
+            <button class="icon-btn danger" data-action="delete-student" data-idx="${i}" aria-label="Eliminar">×</button>
+          </div>
+        `).join('')}
+      </div>
+    `}
+
+    <button class="btn btn-ghost" data-action="reset-students" style="margin-top: 16px; font-size: 13px;">Restaurar lista de ejemplo</button>
+  `;
+}
+
 /* ============================================================
  * EVENT HANDLERS
  * ============================================================ */
@@ -1043,6 +1132,16 @@ function attachHandlers() {
     editInd.addEventListener('input', e => { state.indicatorEdit.draft = e.target.value; });
     setTimeout(() => { editInd.focus(); editInd.setSelectionRange(editInd.value.length, editInd.value.length); }, 60);
   }
+
+  document.querySelectorAll('.student-name-input').forEach(el => {
+    el.addEventListener('blur', onStudentNameBlur);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    });
+  });
+
+  const singleForm = $('single-add-form');
+  if (singleForm) singleForm.addEventListener('submit', onAddSingle);
 }
 
 function onAction(e) {
@@ -1169,7 +1268,96 @@ function onAction(e) {
       return;
     case 'export-csv':
       return exportCSV();
+    case 'manage-students':
+      showScreen('manage-students');
+      return;
+    case 'bulk-replace':
+      return bulkSaveStudents(true);
+    case 'bulk-add':
+      return bulkSaveStudents(false);
+    case 'delete-student':
+      return deleteStudent(parseInt(el.dataset.idx, 10));
+    case 'reset-students':
+      if (confirm('¿Restaurar la lista de alumnos de ejemplo? Se reemplazará tu lista actual.')) {
+        saveStudents([...DEFAULT_STUDENTS]);
+        toast('Lista restaurada');
+        render();
+      }
+      return;
   }
+}
+
+function bulkSaveStudents(replace) {
+  const input = $('bulk-input');
+  if (!input) return;
+  const parsed = parseStudentList(input.value);
+  if (parsed.length === 0) {
+    toast('Pegá al menos un nombre');
+    return;
+  }
+  if (replace) {
+    if (!confirm(`¿Reemplazar la lista actual con ${parsed.length} ${parsed.length === 1 ? 'alumno' : 'alumnos'}? Las evaluaciones anteriores se mantienen.`)) return;
+    saveStudents(parsed);
+    toast(`Lista reemplazada (${parsed.length})`);
+  } else {
+    const merged = [...STUDENTS];
+    let added = 0;
+    parsed.forEach(name => {
+      if (!merged.includes(name)) { merged.push(name); added++; }
+    });
+    if (added === 0) {
+      toast('Ya estaban todos en la lista');
+      return;
+    }
+    saveStudents(merged);
+    toast(`${added} ${added === 1 ? 'alumno agregado' : 'alumnos agregados'}`);
+  }
+  render();
+}
+
+function onAddSingle(e) {
+  e.preventDefault();
+  const input = $('single-input');
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) { toast('Escribí un nombre'); return; }
+  if (STUDENTS.includes(name)) { toast('Ese alumno ya está en la lista'); return; }
+  saveStudents([...STUDENTS, name]);
+  toast('Alumno agregado');
+  render();
+}
+
+function deleteStudent(idx) {
+  if (idx < 0 || idx >= STUDENTS.length) return;
+  const name = STUDENTS[idx];
+  if (!confirm(`¿Eliminar a ${name} de la lista? Las evaluaciones anteriores se mantienen.`)) return;
+  const next = STUDENTS.filter((_, i) => i !== idx);
+  saveStudents(next);
+  toast('Alumno eliminado');
+  render();
+}
+
+function onStudentNameBlur(e) {
+  const el = e.currentTarget;
+  const idx = parseInt(el.dataset.idx, 10);
+  if (isNaN(idx) || idx < 0 || idx >= STUDENTS.length) return;
+  const newName = el.value.trim();
+  const oldName = STUDENTS[idx];
+  if (!newName) {
+    el.value = oldName;
+    toast('El nombre no puede estar vacío');
+    return;
+  }
+  if (newName === oldName) return;
+  if (STUDENTS.some((s, i) => i !== idx && s === newName)) {
+    el.value = oldName;
+    toast('Ya existe un alumno con ese nombre');
+    return;
+  }
+  const next = [...STUDENTS];
+  next[idx] = newName;
+  saveStudents(next);
+  toast('Nombre actualizado');
 }
 
 function startEvaluation() {
