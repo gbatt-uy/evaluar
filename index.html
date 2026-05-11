@@ -314,6 +314,21 @@
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: white; padding: 12px 20px; border-radius: 999px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease; z-index: 100; box-shadow: var(--shadow-lg); white-space: nowrap; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* ============================================================
+   * ONBOARDING MODAL
+   * ============================================================ */
+  .onboarding-overlay { position: fixed; inset: 0; background: rgba(28,25,23,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 200; animation: fadeIn .28s ease; }
+  .onboarding-overlay[hidden] { display: none; }
+  .onboarding-card { background: var(--surface); border-radius: 16px; padding: 32px; width: 100%; max-width: 360px; box-shadow: var(--shadow-lg); animation: fadeIn .32s ease; }
+  .onboarding-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin-bottom: 16px; color: var(--text); }
+  .onboarding-text { font-size: 15px; line-height: 1.65; color: var(--text-soft); margin-bottom: 14px; }
+  .onboarding-text-tight { font-size: 15px; line-height: 1.65; color: var(--text-soft); margin-bottom: 8px; }
+  .onboarding-list { list-style: none; padding: 0; margin: 0 0 24px 0; counter-reset: step; }
+  .onboarding-list li { font-size: 15px; line-height: 1.65; color: var(--text-soft); padding: 4px 0; display: flex; gap: 12px; align-items: baseline; }
+  .onboarding-list li::before { content: counter(step) "."; counter-increment: step; color: var(--primary); font-weight: 700; flex-shrink: 0; min-width: 16px; }
+  .onboarding-btn { width: 100%; height: 48px; border-radius: 12px; background: var(--primary); color: white; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(16,185,129,0.24); transition: background .15s ease, transform .08s ease; }
+  .onboarding-btn:active { background: var(--primary-dark); transform: scale(0.98); }
+
   .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; font-size: 12px; color: var(--text-soft); }
   .legend-item { display: inline-flex; align-items: center; gap: 6px; }
   .legend-item .dot { width: 9px; height: 9px; }
@@ -337,6 +352,20 @@
 <body>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
+<div class="onboarding-overlay" id="onboarding" hidden>
+  <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <h2 class="onboarding-title" id="onboarding-title">Bienvenido a Evaluar</h2>
+    <p class="onboarding-text">Esta herramienta te permite evaluar a tus alumnos de forma rápida desde el celular.</p>
+    <p class="onboarding-text-tight">Para empezar:</p>
+    <ol class="onboarding-list">
+      <li>Configurá tus áreas (ej: Lengua, Matemáticas)</li>
+      <li>Cargá tus indicadores de evaluación</li>
+      <li>Importá la lista de alumnos</li>
+      <li>¡Listo! Empezá a evaluar</li>
+    </ol>
+    <button class="onboarding-btn" id="onboarding-close" type="button">Entendido</button>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -350,33 +379,14 @@ const CONFIG = {
 };
 
 const DEFAULTS = {
-  AREAS: ['Lengua'],
+  AREAS: [],
   BIMESTERS: ['1er Bimestre', '2do Bimestre', '3er Bimestre', '4to Bimestre'],
   STUDENTS: [
     'Sofía Martínez', 'Tomás García', 'Valentina López', 'Mateo Rodríguez',
     'Camila Fernández', 'Santiago Pérez', 'Isabella González', 'Benjamín Díaz',
     'Lucía Torres', 'Joaquín Ramírez'
   ],
-  INDICATORS: [
-    'Lee textos narrativos con fluidez y entonación adecuada',
-    'Comprende el sentido global de un texto leído',
-    'Identifica personajes, lugar y tiempo en una narración',
-    'Reconoce la estructura del texto narrativo (inicio, nudo, desenlace)',
-    'Distingue entre texto literario y no literario',
-    'Produce textos narrativos breves con coherencia',
-    'Usa correctamente mayúsculas al inicio de oraciones y nombres propios',
-    'Aplica reglas de acentuación en palabras agudas, graves y esdrújulas',
-    'Reconoce sustantivos comunes y propios',
-    'Identifica adjetivos calificativos en oraciones',
-    'Conjuga verbos en presente, pasado y futuro',
-    'Usa correctamente los signos de puntuación',
-    'Construye oraciones con sujeto y predicado claros',
-    'Amplía su vocabulario incorporando sinónimos y antónimos',
-    'Expresa opiniones de forma oral con claridad',
-    'Escucha con atención y respeta el turno de palabra',
-    'Realiza inferencias a partir de textos leídos',
-    'Revisa y corrige sus propios escritos'
-  ]
+  INDICATORS: []
 };
 
 const VALORACIONES = [
@@ -1695,12 +1705,30 @@ function exportCSV() {
 }
 
 /* ============================================================
+ * ONBOARDING
+ * ============================================================ */
+const ONBOARDING_KEY = 'onboarding_done';
+
+function showOnboardingIfNeeded() {
+  if (localStorage.getItem(ONBOARDING_KEY)) return;
+  const overlay = $('onboarding');
+  const closeBtn = $('onboarding-close');
+  if (!overlay || !closeBtn) return;
+  overlay.hidden = false;
+  closeBtn.addEventListener('click', () => {
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    overlay.hidden = true;
+  }, { once: true });
+}
+
+/* ============================================================
  * INIT
  * ============================================================ */
 function init() {
   DB.load();
   state.screen = 'home';
   render();
+  showOnboardingIfNeeded();
 }
 
 init();
