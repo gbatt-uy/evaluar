@@ -32,36 +32,18 @@ The JS block in `index.html` is divided into banner-commented sections (`/* === 
 
 ## Quality Gates
 
-> These rules were extracted from a full code review done on **2026-05-12** and should be updated as the project evolves. Every code change must satisfy this checklist; if a change has to break a rule, call it out explicitly in the commit message so the user can decide.
+This project uses the `code-review` skill for pre-push reviews. The following project-specific rules are loaded by the skill in addition to its general checklist:
 
-- **No native `confirm()`** — always use the `showConfirm` modal helper. Native dialogs break the mobile UI style.
-- **`localStorage.setItem` / `removeItem` always inside `try/catch`** — surface failures via `toast()` so quota errors don't silently drop user data.
-- **No dead code** — no unused variables, functions, CSS classes, or event handlers. If it has no caller/reader, delete it.
-- **No `innerHTML` without `esc()`** for user-controlled values. XSS prevention is a manual responsibility here.
-- **Name comparisons are case-insensitive** — areas, bimesters, students compared with `.toLowerCase()` for duplicate detection. Still allow case-only renames of the same entry.
-- **Don't duplicate logic** — if the same pattern appears 2+ times, extract a helper (e.g. `countValoraciones`, `matchesEval`, `EMPTY_FILTER`).
-- **UI mutations go through state → persist → render** — any function that changes app state must update the in-memory model, persist via `DB`, and trigger `render()`. Direct DOM edits are only acceptable when they explicitly mirror state to preserve an animation (e.g. `toggleObs`, the inline label sync in `onObsInput`).
-- **Event-handler closures capture at mount, not at fire time** — handlers that depend on `studentIdx`, `currentEval.id`, or other mutable state must capture those values in `attachHandlers` so the listener still saves to the correct record after a re-render swaps the DOM (see `onObsInput` / `onObsBlur`).
-- **Blocking UI (onboarding, modals) runs before the first paint** — invoke before the initial `render()` so the overlay doesn't flash on top of an already-painted screen.
+- No `confirm()` nativo — usar siempre `showConfirm` modal
+- `localStorage.setItem`/`removeItem` siempre dentro de try/catch
+- No `innerHTML` sin `esc()` (XSS prevention)
+- Comparaciones de nombres (áreas, bimestres, alumnos) case-insensitive con `.toLowerCase()`
+- No duplicar lógica — extraer helpers si el mismo patrón aparece 2+ veces
+- UI mutations deben fluir por state → render, no cambios directos al DOM
+- Closures en event handlers capturan índices/IDs al montar, no al disparar
+- Onboarding/modals que bloquean UI se ejecutan antes del render principal
 
-## Pre-Push Self-Review
-
-Before every `git push`, Claude Code must:
-
-1. **Diff scan** — run `git diff HEAD~1` (or the appropriate range) and look for:
-   - Dead code (variables, functions, CSS classes without callers/users)
-   - Duplicated logic that should be a helper
-   - `innerHTML` interpolations missing `esc()`
-   - Native `confirm()` calls
-   - `localStorage` writes outside `try/catch`
-   - UI inconsistencies (mixing patterns for the same concept — e.g. some delete flows using `showConfirm` and others using `confirm()`)
-   - Race conditions in event handlers (closures reading mutable state at fire time instead of capture time)
-   - Variables declared but never read
-2. **Triage**:
-   - **CRITICAL or HIGH** → fix before pushing, in the same commit if scoped, otherwise as a follow-up commit on the same push.
-   - **MEDIUM** → report to the user and ask whether to fix before pushing.
-   - **Only LOW** → push and include them in the post-push report.
-3. **Report** — summarize what was checked, what was found, and what was fixed in the final message to the user.
+_Rules extracted from code review 2026-05-12. Update as the project evolves._
 
 ## How to push
 ```bash
