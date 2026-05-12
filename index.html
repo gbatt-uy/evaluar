@@ -523,7 +523,11 @@ const DB = {
   },
 
   save() {
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(this._data));
+    try {
+      localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(this._data));
+    } catch (e) {
+      toast('No se pudo guardar: almacenamiento lleno');
+    }
   },
 
   /* ---- Students ---- */
@@ -541,7 +545,11 @@ const DB = {
   },
 
   saveStudents(arr) {
-    localStorage.setItem(CONFIG.STUDENTS_KEY, JSON.stringify(arr));
+    try {
+      localStorage.setItem(CONFIG.STUDENTS_KEY, JSON.stringify(arr));
+    } catch (e) {
+      toast('No se pudo guardar alumnos: almacenamiento lleno');
+    }
   },
 
   /* ---- Indicators ---- */
@@ -1640,10 +1648,11 @@ const ACTIONS = {
 
   'config-students':    () => showScreen('config-students'),
   'config-indicators':  () => {
-    state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     showScreen('config-indicators');
   },
   'config-areas':       () => showScreen('config-areas'),
+  'config-bimesters':   () => showScreen('config-bimesters'),
 
   'set-area':       (v) => {
     if (state.setup.area !== v) state.setup.indicadorId = null;
@@ -1850,7 +1859,7 @@ function checkSetup() {
   if (DB.getAreas().length === 0)      missing.push({ name: 'Áreas', screen: 'config-areas' });
   if (DB.getIndicators().length === 0) missing.push({ name: 'Indicadores', screen: 'config-indicators' });
   if (DB.getStudents().length === 0)   missing.push({ name: 'Alumnos', screen: 'config-students' });
-  if (DB.getBimesters().length === 0)  missing.push({ name: 'Bimestres', screen: 'config-areas' });
+  if (DB.getBimesters().length === 0)  missing.push({ name: 'Bimestres', screen: 'config-bimesters' });
   return missing;
 }
 
