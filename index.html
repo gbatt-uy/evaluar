@@ -66,10 +66,10 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
   .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 48px; margin-bottom: 16px; }
-  .topbar .back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-weight: 500; font-size: 15px; padding: 8px 10px 8px 4px; border-radius: 10px; min-height: 44px; }
+  .topbar .back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-weight: 500; font-size: 15px; padding: 12px 12px 12px 6px; border-radius: 10px; min-height: 48px; }
   .topbar .back:active { background: var(--surface-alt); }
   .topbar .title { font-size: 14px; font-weight: 600; color: var(--text-soft); }
-  .topbar .spacer { width: 56px; }
+  .topbar .spacer { min-width: 56px; display: inline-flex; justify-content: flex-end; }
 
   /* ============================================================
    * TYPOGRAPHY
@@ -97,7 +97,7 @@
   .btn-lg { font-size: 17px; min-height: 56px; padding: 16px; border-radius: 14px; }
   .btn[disabled] { opacity: 0.5; pointer-events: none; }
 
-  .icon-btn { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-alt); color: var(--text-soft); font-size: 16px; transition: background .12s ease, color .12s ease; flex-shrink: 0; }
+  .icon-btn { width: 48px; height: 48px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-alt); color: var(--text-soft); font-size: 18px; transition: background .12s ease, color .12s ease; flex-shrink: 0; }
   .icon-btn:active { background: var(--border); }
   .icon-btn.danger { color: var(--danger); }
   .icon-btn.danger:active { background: var(--danger-soft); }
@@ -165,7 +165,7 @@
   .student-meta { font-size: 13px; color: var(--text-mute); margin-top: 6px; font-weight: 500; }
 
   .mode-toggle { display: flex; background: var(--surface-alt); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
-  .mode-toggle button { flex: 1; padding: 10px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--text-soft); transition: background .15s ease, color .15s ease; min-height: 40px; }
+  .mode-toggle button { flex: 1; padding: 12px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--text-soft); transition: background .15s ease, color .15s ease; min-height: 48px; }
   .mode-toggle button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
 
   /* Valoración buttons */
@@ -229,7 +229,13 @@
   .dist-bar-fill.proceso { background: var(--proceso); }
   .dist-bar-fill.apoyo { background: var(--apoyo); }
   .dist-bar-fill.noeval { background: var(--noeval); }
-  .dist-count { font-size: 14px; font-weight: 600; min-width: 24px; text-align: right; }
+  .dist-count { font-size: 14px; font-weight: 600; min-width: 64px; text-align: right; }
+  .dist-pct { font-weight: 500; color: var(--text-mute); font-size: 12px; margin-left: 2px; }
+
+  /* Topbar inline action button — small chip in the right slot */
+  .topbar-action { font-size: 13px; padding: 12px 12px; border-radius: 10px; font-weight: 600; color: var(--primary); min-height: 48px; display: inline-flex; align-items: center; }
+  .topbar-action:active { background: var(--surface-alt); }
+  .topbar-action.neutral { color: var(--text-soft); }
 
   .obs-list { display: flex; flex-direction: column; gap: 8px; }
   .obs-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
@@ -242,7 +248,7 @@
    * HISTORY
    * ============================================================ */
   .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-  .filter-grid .input { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .filter-grid .input { min-height: 48px; padding: 12px 14px; font-size: 14px; }
 
   .history-list { display: flex; flex-direction: column; gap: 10px; }
   .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: left; width: 100%; transition: background .12s ease; }
@@ -292,7 +298,7 @@
   .manage-actions { display: flex; gap: 6px; flex-shrink: 0; }
   .manage-edit { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
   .manage-edit-actions { display: flex; gap: 8px; }
-  .manage-edit-actions .btn { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .manage-edit-actions .btn { min-height: 48px; padding: 12px 14px; font-size: 14px; }
   .add-card { background: var(--primary-soft); border: 1.5px dashed var(--primary); border-radius: 12px; padding: 16px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
   .add-card .section-label { color: var(--primary-dark); }
   .add-btn-inline { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface); border: 1.5px dashed var(--border-strong); border-radius: 12px; padding: 14px; color: var(--primary); font-weight: 600; font-size: 15px; width: 100%; min-height: 52px; margin-bottom: 14px; transition: background .12s ease, border-color .12s ease; }
@@ -343,8 +349,8 @@
   .checklist-item .arrow { color: var(--text-mute); font-size: 16px; }
 
   /* Indicator-area picker (pills) */
-  .area-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-  .area-pill { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--border); font-size: 13px; font-weight: 500; color: var(--text-soft); min-height: 36px; }
+  .area-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .area-pill { padding: 12px 16px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--border); font-size: 13px; font-weight: 500; color: var(--text-soft); min-height: 48px; }
   .area-pill.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-dark); font-weight: 600; }
   .indicator-area-tag { display: inline-block; padding: 2px 8px; background: var(--surface-alt); color: var(--text-soft); border-radius: 999px; font-size: 11px; font-weight: 600; margin-top: 4px; }
 
@@ -914,7 +920,7 @@ function renderSetup() {
     <div class="mb-20" style="flex:1; min-height:0; display:flex; flex-direction:column;">
       <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
         <span>Indicador</span>
-        <button class="btn-ghost" data-action="config-indicators" style="font-size:11px;padding:4px 8px;border-radius:6px;text-transform:none;letter-spacing:0;color:var(--primary)">Gestionar</button>
+        <button class="topbar-action" data-action="config-indicators" style="font-size:12px;text-transform:none;letter-spacing:0">Gestionar</button>
       </div>
       ${!s.area
         ? renderEmpty('📋', 'Elegí un área', 'Primero seleccioná un área arriba.')
@@ -955,7 +961,7 @@ function renderEvaluation() {
     ${renderTopbar({
       back: true,
       title: `${esc(ev.area)} · ${esc(ev.bimestre)}`,
-      right: `<button class="btn-ghost" data-action="goto-summary" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600;color:var(--primary)">Resumen</button>`
+      right: `<button class="topbar-action" data-action="goto-summary">Resumen</button>`
     })}
     <div class="indicator-pill">${esc(ev.indicador || 'Sin indicador')}</div>
 
@@ -1049,7 +1055,7 @@ function renderSummaryView(ev, isHistory) {
     ${renderTopbar({
       back: true,
       title: isHistory ? 'Detalle' : 'Resumen',
-      right: !isHistory ? `<button class="btn-ghost" data-action="goto-home" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600">Inicio</button>` : ''
+      right: !isHistory ? `<button class="topbar-action neutral" data-action="goto-home">Inicio</button>` : ''
     })}
     <div class="indicator-pill">${esc(ev.area)} · ${esc(ev.bimestre)}</div>
     <div class="h3" style="margin-bottom:4px">${esc(ev.indicador)}</div>
@@ -1071,6 +1077,7 @@ function renderSummaryView(ev, isHistory) {
       ${VALORACIONES.map(v => {
         const c = counts[v.id];
         const pct = total > 0 ? (c / total) * 100 : 0;
+        const pctLabel = total > 0 ? Math.round(pct) : 0;
         return `
           <div class="dist-row">
             <div class="dist-label">
@@ -1078,7 +1085,7 @@ function renderSummaryView(ev, isHistory) {
               <span>${esc(v.label)}</span>
             </div>
             <div class="dist-bar-track"><div class="dist-bar-fill ${v.id}" style="width:${pct}%"></div></div>
-            <div class="dist-count">${c}</div>
+            <div class="dist-count">${c} <span class="dist-pct">(${pctLabel}%)</span></div>
           </div>`;
       }).join('')}
     </div>
@@ -1156,7 +1163,7 @@ function renderHistory() {
     ${renderTopbar({
       back: true,
       title: 'Historial',
-      right: `<button class="btn-ghost" data-action="export-csv" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600;color:var(--primary)">CSV</button>`
+      right: `<button class="topbar-action" data-action="export-csv">CSV</button>`
     })}
     <div class="h2 mb-16">Evaluaciones</div>
 
@@ -1236,7 +1243,7 @@ function renderStudentsView() {
     ${renderTopbar({
       back: true,
       title: 'Alumnos',
-      right: `<button class="btn-ghost" data-action="config-students" style="font-size:13px;padding:8px;border-radius:8px;font-weight:600;color:var(--primary);min-height:48px">Importar lista</button>`
+      right: `<button class="topbar-action" data-action="config-students">Importar lista</button>`
     })}
     <div class="h2 mb-16">Desempeño</div>
 
@@ -2057,11 +2064,47 @@ function showOnboardingIfNeeded() {
 }
 
 /* ============================================================
+ * SWIPE NAVIGATION (evaluation screen)
+ * ============================================================ */
+let _touchStart = null;
+function attachSwipeNav() {
+  document.addEventListener('touchstart', (e) => {
+    if (state.screen !== 'evaluation' || state.modal) return;
+    if (e.touches.length !== 1) return;
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
+    const t = e.touches[0];
+    _touchStart = { x: t.clientX, y: t.clientY, time: Date.now() };
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    const start = _touchStart;
+    _touchStart = null;
+    if (!start) return;
+    if (state.screen !== 'evaluation' || state.modal) return;
+    if (e.changedTouches.length !== 1) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const dt = Date.now() - start.time;
+    if (dt > 600) return;
+    if (Math.abs(dx) < 60) return;
+    if (Math.abs(dy) > Math.abs(dx) * 0.6) return;
+    if (dx < 0) {
+      ACTIONS['next-student'] && ACTIONS['next-student']();
+    } else {
+      ACTIONS['prev-student'] && ACTIONS['prev-student']();
+    }
+  }, { passive: true });
+}
+
+/* ============================================================
  * INIT
  * ============================================================ */
 function init() {
   DB.load();
   state.screen = 'home';
+  attachSwipeNav();
   render();
   showOnboardingIfNeeded();
 }
