@@ -23,12 +23,23 @@
     --text-soft: #57534e;
     --text-mute: #a8a29e;
 
-    --primary: #10b981;
-    --primary-dark: #059669;
-    --primary-soft: #d1fae5;
+    --primary: #E8843C;
+    --primary-dark: #C66A28;
+    --primary-soft: #FCE7D6;
+    --primary-rgb: 232,132,60;
     --secondary: #6b7280;
     --danger: #ef4444;
     --danger-soft: #fee2e2;
+
+    /* Complementary accents used sparingly for variety */
+    --accent: #2DA5B5;            /* teal — info / indicator chips */
+    --accent-dark: #1F8895;
+    --accent-soft: #D6EDF1;
+    --accent-2: #8B5CF6;          /* violet — bimester / accents */
+    --accent-2-soft: #EDE5FE;
+    --accent-3: #0EA371;          /* green — students / completion */
+    --accent-3-soft: #D1F1E2;
+    --warm-tint: #FFF4E6;         /* very soft warm background */
 
     --logrado: #10b981;
     --proceso: #f59e0b;
@@ -86,7 +97,7 @@
    * ============================================================ */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 18px; border-radius: 14px; font-weight: 600; min-height: 52px; transition: transform .08s ease, background .15s ease, box-shadow .15s ease; width: 100%; }
   .btn:active { transform: scale(0.98); }
-  .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(16,185,129,0.24); }
+  .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(var(--primary-rgb),0.28); }
   .btn-primary:active { background: var(--primary-dark); }
   .btn-secondary { background: var(--surface); color: var(--text-soft); border: 1px solid var(--border); }
   .btn-secondary:active { background: var(--surface-alt); }
@@ -119,18 +130,23 @@
   /* ============================================================
    * HOME
    * ============================================================ */
-  .home-hero { padding: 16px 4px 28px; }
-  .home-hero .greeting { color: var(--text-soft); font-size: 14px; margin-bottom: 6px; }
+  .home-hero { padding: 20px 18px 24px; margin-bottom: 8px; background: linear-gradient(135deg, var(--warm-tint) 0%, var(--accent-soft) 100%); border-radius: 16px; border: 1px solid rgba(var(--primary-rgb),0.12); }
+  .home-hero .greeting { color: var(--primary-dark); font-size: 13px; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .home-hero .h1 { color: var(--text); }
 
   .home-section { margin-bottom: 28px; }
-  .home-primary-btn { width: 100%; padding: 24px; min-height: 88px; font-size: 19px; border-radius: 16px; background: var(--primary); color: white; font-weight: 700; box-shadow: 0 4px 14px rgba(16,185,129,0.28); display: flex; flex-direction: column; align-items: flex-start; gap: 4px; transition: transform .08s ease, background .15s ease; }
-  .home-primary-btn:active { transform: scale(0.985); background: var(--primary-dark); }
+  .home-primary-btn { width: 100%; padding: 24px; min-height: 88px; font-size: 19px; border-radius: 16px; background: linear-gradient(135deg, var(--primary) 0%, #F0A05E 100%); color: white; font-weight: 700; box-shadow: 0 6px 18px rgba(var(--primary-rgb),0.32); display: flex; flex-direction: column; align-items: flex-start; gap: 4px; transition: transform .08s ease, box-shadow .15s ease, filter .15s ease; }
+  .home-primary-btn:active { transform: scale(0.985); filter: brightness(0.95); }
   .home-primary-btn .sub { font-size: 13px; font-weight: 400; opacity: 0.85; }
 
   .home-link-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-  .home-link { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; min-height: 56px; transition: background .12s ease; text-align: left; width: 100%; }
+  .home-link { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; min-height: 56px; transition: background .12s ease; text-align: left; width: 100%; position: relative; overflow: hidden; }
+  .home-link::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+  .home-link[data-accent="violet"]::before { background: var(--accent-2); }
+  .home-link[data-accent="green"]::before { background: var(--accent-3); }
+  .home-link[data-accent="orange"]::before { background: var(--primary); }
   .home-link:active { background: var(--surface-alt); }
-  .home-link-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .home-link-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; padding-left: 6px; }
   .home-link-title { font-weight: 600; font-size: 15px; }
   .home-link-meta { font-size: 13px; color: var(--text-mute); }
   .home-link .arrow { color: var(--text-mute); font-size: 18px; margin-left: 8px; }
@@ -158,7 +174,7 @@
   .progress-wrap { padding: 4px 0 14px; }
   .progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--text-soft); font-weight: 500; }
   .progress-bar { height: 6px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .3s ease; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%); border-radius: 3px; transition: width .3s ease; }
 
   .student-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; }
   .student-name { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
@@ -210,11 +226,15 @@
   /* ============================================================
    * SUMMARY
    * ============================================================ */
-  .indicator-pill { display: inline-block; padding: 5px 12px; background: var(--primary-soft); color: var(--primary-dark); border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+  .indicator-pill { display: inline-block; padding: 5px 12px; background: var(--accent-soft); color: var(--accent-dark); border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
   .summary-meta { font-size: 13px; color: var(--text-mute); margin-bottom: 20px; }
   .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
   .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .stat.stat-done { background: var(--accent-3-soft); border-color: rgba(14,163,113,0.22); }
+  .stat.stat-pending { background: var(--warm-tint); border-color: rgba(var(--primary-rgb),0.22); }
   .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .stat.stat-done .stat-value { color: var(--accent-3); }
+  .stat.stat-pending .stat-value { color: var(--primary-dark); }
   .stat-label { font-size: 12px; color: var(--text-mute); margin-top: 2px; font-weight: 500; }
 
   .distribution { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; }
@@ -332,21 +352,44 @@
   .onboarding-list { list-style: none; padding: 0; margin: 0 0 24px 0; counter-reset: step; }
   .onboarding-list li { font-size: 15px; line-height: 1.65; color: var(--text-soft); padding: 4px 0; display: flex; gap: 12px; align-items: baseline; }
   .onboarding-list li::before { content: counter(step) "."; counter-increment: step; color: var(--primary); font-weight: 700; flex-shrink: 0; min-width: 16px; }
-  .onboarding-btn { width: 100%; height: 48px; border-radius: 12px; background: var(--primary); color: white; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(16,185,129,0.24); transition: background .15s ease, transform .08s ease; }
+  .onboarding-btn { width: 100%; height: 48px; border-radius: 12px; background: var(--primary); color: white; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(var(--primary-rgb),0.28); transition: background .15s ease, transform .08s ease; }
   .onboarding-btn:active { background: var(--primary-dark); transform: scale(0.98); }
 
-  /* Setup checklist (home, first-time setup) */
-  .setup-checklist { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
-  .setup-checklist-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-  .setup-checklist-sub { font-size: 13px; color: var(--text-mute); margin-bottom: 12px; }
-  .checklist-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; text-align: left; min-height: 48px; transition: background .12s ease; }
-  .checklist-item + .checklist-item { margin-top: 6px; }
-  .checklist-item:active { background: var(--surface-alt); }
-  .checklist-item.done { opacity: 0.6; }
-  .checklist-mark { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; background: var(--surface-alt); color: var(--text-mute); border: 1.5px solid var(--border-strong); }
-  .checklist-item.done .checklist-mark { background: var(--primary); color: white; border-color: var(--primary); }
-  .checklist-name { flex: 1; font-size: 14px; font-weight: 500; }
-  .checklist-item .arrow { color: var(--text-mute); font-size: 16px; }
+  /* Setup-init: dedicated full-screen setup flow before home unlocks */
+  .setup-init-hero { padding: 8px 4px 18px; }
+  .setup-init-hero .eyebrow { color: var(--primary-dark); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .setup-init-hero p { margin-top: 8px; }
+
+  .setup-init-progress { background: linear-gradient(135deg, var(--warm-tint) 0%, var(--accent-soft) 100%); border: 1px solid rgba(var(--primary-rgb),0.18); border-radius: 14px; padding: 14px 16px; margin-bottom: 18px; }
+  .setup-init-progress-meta { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--text-soft); margin-bottom: 8px; }
+  .setup-init-progress-meta strong { color: var(--primary-dark); font-weight: 700; }
+
+  .setup-init-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .setup-init-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 14px 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; text-align: left; min-height: 72px; box-shadow: var(--shadow-sm); transition: transform .08s ease, background .12s ease, border-color .12s ease; position: relative; overflow: hidden; }
+  .setup-init-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
+  .setup-init-item[data-accent="orange"]::before { background: var(--primary); }
+  .setup-init-item[data-accent="violet"]::before { background: var(--accent-2); }
+  .setup-init-item[data-accent="teal"]::before { background: var(--accent); }
+  .setup-init-item[data-accent="green"]::before { background: var(--accent-3); }
+  .setup-init-item:active { transform: scale(0.99); background: var(--surface-alt); }
+  .setup-init-item.done { background: var(--surface); }
+  .setup-init-item.done::before { opacity: 0.35; }
+
+  .setup-init-num { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; background: var(--surface-alt); color: var(--text-mute); border: 1.5px solid var(--border-strong); }
+  .setup-init-item[data-accent="orange"]:not(.done) .setup-init-num { color: var(--primary-dark); background: var(--primary-soft); border-color: rgba(var(--primary-rgb),0.35); }
+  .setup-init-item[data-accent="violet"]:not(.done) .setup-init-num { color: var(--accent-2); background: var(--accent-2-soft); border-color: rgba(139,92,246,0.35); }
+  .setup-init-item[data-accent="teal"]:not(.done) .setup-init-num { color: var(--accent-dark); background: var(--accent-soft); border-color: rgba(45,165,181,0.35); }
+  .setup-init-item[data-accent="green"]:not(.done) .setup-init-num { color: var(--accent-3); background: var(--accent-3-soft); border-color: rgba(14,163,113,0.35); }
+  .setup-init-item.done .setup-init-num { background: var(--accent-3); color: white; border-color: var(--accent-3); font-size: 16px; }
+
+  .setup-init-body { flex: 1; min-width: 0; }
+  .setup-init-name { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .setup-init-count { font-size: 11px; font-weight: 700; color: var(--accent-3); background: var(--accent-3-soft); padding: 2px 8px; border-radius: 999px; }
+  .setup-init-desc { font-size: 13px; color: var(--text-mute); margin-top: 2px; line-height: 1.35; }
+  .setup-init-item .arrow { color: var(--text-mute); font-size: 18px; padding-right: 4px; }
+
+  .setup-init-cta { margin-top: 8px; animation: fadeIn .35s ease; }
+  .setup-init-cta .btn-lg { background: linear-gradient(135deg, var(--primary) 0%, var(--accent-3) 100%); box-shadow: 0 6px 18px rgba(var(--primary-rgb),0.32); }
 
   /* Indicator-area picker (pills) */
   .area-pills { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -388,15 +431,15 @@
 <div class="onboarding-overlay" id="onboarding" hidden>
   <div class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
     <h2 class="onboarding-title" id="onboarding-title">Bienvenido a Evaluar</h2>
-    <p class="onboarding-text">Esta herramienta te permite evaluar a tus alumnos de forma rápida desde el celular.</p>
-    <p class="onboarding-text-tight">Para empezar:</p>
+    <p class="onboarding-text">Una herramienta para evaluar a tus alumnos de forma rápida desde el celular.</p>
+    <p class="onboarding-text-tight">Antes de empezar, vamos a configurar lo básico:</p>
     <ol class="onboarding-list">
-      <li>Configurá tus áreas (ej: Lengua, Matemáticas)</li>
-      <li>Cargá tus indicadores de evaluación</li>
-      <li>Importá la lista de alumnos</li>
-      <li>¡Listo! Empezá a evaluar</li>
+      <li>Áreas (materias que evaluás)</li>
+      <li>Bimestres (períodos lectivos)</li>
+      <li>Indicadores (criterios de evaluación)</li>
+      <li>Alumnos (lista del curso)</li>
     </ol>
-    <button class="onboarding-btn" id="onboarding-close" type="button">Entendido</button>
+    <button class="onboarding-btn" id="onboarding-close" type="button">Empezar</button>
   </div>
 </div>
 
@@ -728,6 +771,7 @@ const state = {
  * ============================================================ */
 const SCREENS = {
   home: renderHome,
+  'setup-init': renderSetupInit,
   setup: renderSetup,
   evaluation: renderEvaluation,
   summary: renderSummary,
@@ -740,6 +784,13 @@ const SCREENS = {
   'config-bimesters': renderConfigBimesters,
 };
 
+function isSetupComplete() {
+  return DB.getAreas().length > 0
+    && DB.getIndicators().length > 0
+    && DB.getBimesters().length > 0
+    && DB.getStudents().length > 0;
+}
+
 function showScreen(name, payload) {
   state.backStack.push(state.screen);
   state.screen = name;
@@ -748,11 +799,14 @@ function showScreen(name, payload) {
 }
 
 function goBack() {
-  state.screen = state.backStack.pop() || 'home';
+  let next = state.backStack.pop() || 'home';
+  if (next === 'home' && !isSetupComplete()) next = 'setup-init';
+  state.screen = next;
   render();
 }
 
 function navigate(name, payload) {
+  if (name === 'home' && !isSetupComplete()) name = 'setup-init';
   state.screen = name;
   if (payload) Object.assign(state, payload);
   state.backStack = [];
@@ -824,8 +878,6 @@ function renderHome() {
       <div class="h1">Evaluar</div>
     </div>
 
-    ${renderSetupChecklist()}
-
     <div class="home-section">
       <div class="section-label">Evaluar</div>
       <button class="home-primary-btn" data-action="new-eval">
@@ -833,14 +885,14 @@ function renderHome() {
         <span class="sub">Registrá el desempeño de tu clase</span>
       </button>
       <div class="home-link-list">
-        <button class="home-link" data-action="open-history">
+        <button class="home-link" data-action="open-history" data-accent="violet">
           <div class="home-link-body">
             <div class="home-link-title">Historial</div>
             <div class="home-link-meta">Ver evaluaciones anteriores</div>
           </div>
           <span class="arrow">›</span>
         </button>
-        <button class="home-link" data-action="open-students">
+        <button class="home-link" data-action="open-students" data-accent="green">
           <div class="home-link-body">
             <div class="home-link-title">Alumnos</div>
             <div class="home-link-meta">Desempeño por estudiante</div>
@@ -853,7 +905,7 @@ function renderHome() {
     <div class="home-section">
       <div class="section-label">Configurar</div>
       <div class="home-link-list">
-        <button class="home-link" data-action="config-areas">
+        <button class="home-link" data-action="config-areas" data-accent="orange">
           <div class="home-link-body">
             <div class="home-link-title">Áreas</div>
             <div class="home-link-meta">${areas.length} ${areas.length === 1 ? 'área' : 'áreas'}</div>
@@ -867,7 +919,7 @@ function renderHome() {
           </div>
           <span class="arrow">›</span>
         </button>
-        <button class="home-link" data-action="config-bimesters">
+        <button class="home-link" data-action="config-bimesters" data-accent="violet">
           <div class="home-link-body">
             <div class="home-link-title">Bimestres</div>
             <div class="home-link-meta">${bimesters.length} ${bimesters.length === 1 ? 'bimestre' : 'bimestres'}</div>
@@ -879,30 +931,61 @@ function renderHome() {
   `;
 }
 
-function renderSetupChecklist() {
+function renderSetupInit() {
   const areas = DB.getAreas();
-  const indicators = DB.getIndicators();
   const bimesters = DB.getBimesters();
+  const indicators = DB.getIndicators();
   const students = DB.getStudents();
+
   const items = [
-    { name: 'Áreas',       done: areas.length > 0,      screen: 'config-areas' },
-    { name: 'Indicadores', done: indicators.length > 0, screen: 'config-indicators' },
-    { name: 'Bimestres',   done: bimesters.length > 0,  screen: 'config-bimesters' },
-    { name: 'Alumnos',     done: students.length > 0,   screen: 'config-students' },
+    { num: 1, name: 'Áreas',       desc: 'Materias que evaluás (ej: Lengua, Matemática).', done: areas.length > 0,      count: areas.length,      screen: 'config-areas',      accent: 'orange' },
+    { num: 2, name: 'Bimestres',   desc: 'Períodos lectivos del año.',                     done: bimesters.length > 0,  count: bimesters.length,  screen: 'config-bimesters',  accent: 'violet' },
+    { num: 3, name: 'Indicadores', desc: 'Criterios que vas a evaluar.',                   done: indicators.length > 0, count: indicators.length, screen: 'config-indicators', accent: 'teal'   },
+    { num: 4, name: 'Alumnos',     desc: 'Lista de tu curso (pegá nombres).',              done: students.length > 0,   count: students.length,   screen: 'config-students',   accent: 'green'  },
   ];
-  if (items.every(i => i.done)) return '';
+  const doneCount = items.filter(i => i.done).length;
+  const total = items.length;
+  const allDone = doneCount === total;
+  const pct = Math.round((doneCount / total) * 100);
+
   return `
-    <div class="setup-checklist">
-      <div class="setup-checklist-title">Para empezar</div>
-      <div class="setup-checklist-sub">Completá la configuración para poder evaluar.</div>
+    ${renderTopbar()}
+    <div class="setup-init-hero">
+      <div class="eyebrow">Configurar</div>
+      <div class="h1">Setup inicial</div>
+      <p class="lead">Completá estos 4 pasos para empezar a evaluar.</p>
+    </div>
+
+    <div class="setup-init-progress">
+      <div class="setup-init-progress-meta">
+        <span><strong>${doneCount}</strong> de ${total} listos</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+
+    <div class="setup-init-list">
       ${items.map(it => `
-        <button class="checklist-item ${it.done ? 'done' : ''}" data-action="${it.screen}">
-          <span class="checklist-mark">${it.done ? '✓' : '○'}</span>
-          <span class="checklist-name">${it.name}</span>
+        <button class="setup-init-item ${it.done ? 'done' : ''}" data-accent="${it.accent}" data-action="${it.screen}">
+          <span class="setup-init-num">${it.done ? '✓' : it.num}</span>
+          <div class="setup-init-body">
+            <div class="setup-init-name">
+              ${esc(it.name)}
+              ${it.done ? `<span class="setup-init-count">${it.count}</span>` : ''}
+            </div>
+            <div class="setup-init-desc">${esc(it.desc)}</div>
+          </div>
           <span class="arrow">›</span>
         </button>
       `).join('')}
-    </div>`;
+    </div>
+
+    ${allDone ? `
+      <div class="setup-init-cta">
+        <button class="btn btn-primary btn-lg" data-action="finish-setup">Empezar a evaluar →</button>
+      </div>
+    ` : ''}
+  `;
 }
 
 /* ============================================================
@@ -1092,11 +1175,11 @@ function renderSummaryView(ev, isHistory) {
     <div class="summary-meta">${formatDate(ev.date)}</div>
 
     <div class="summary-grid">
-      <div class="stat">
+      <div class="stat stat-done">
         <div class="stat-value">${completed}/${total}</div>
         <div class="stat-label">Evaluados</div>
       </div>
-      <div class="stat">
+      <div class="stat ${pending > 0 ? 'stat-pending' : ''}">
         <div class="stat-value">${pending}</div>
         <div class="stat-label">Pendientes</div>
       </div>
@@ -1642,6 +1725,10 @@ function onFilterChange(e) {
 const ACTIONS = {
   back:               () => goBack(),
   'goto-home':        () => navigate('home'),
+  'finish-setup':     () => {
+    if (!isSetupComplete()) { toast('Aún te falta configurar algo'); return; }
+    navigate('home');
+  },
   'goto-summary':     () => showScreen('summary'),
   'continue-eval':    () => showScreen('evaluation'),
 
@@ -2171,10 +2258,10 @@ function attachSwipeNav() {
  * ============================================================ */
 function init() {
   DB.load();
-  state.screen = 'home';
+  state.screen = isSetupComplete() ? 'home' : 'setup-init';
   attachSwipeNav();
   // Decide onboarding visibility before first paint so it never flashes
-  // behind the home screen.
+  // behind the screen below.
   showOnboardingIfNeeded();
   render();
 }
