@@ -329,6 +329,25 @@
   .onboarding-btn { width: 100%; height: 48px; border-radius: 12px; background: var(--primary); color: white; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(16,185,129,0.24); transition: background .15s ease, transform .08s ease; }
   .onboarding-btn:active { background: var(--primary-dark); transform: scale(0.98); }
 
+  /* Setup checklist (home, first-time setup) */
+  .setup-checklist { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+  .setup-checklist-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .setup-checklist-sub { font-size: 13px; color: var(--text-mute); margin-bottom: 12px; }
+  .checklist-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; text-align: left; min-height: 48px; transition: background .12s ease; }
+  .checklist-item + .checklist-item { margin-top: 6px; }
+  .checklist-item:active { background: var(--surface-alt); }
+  .checklist-item.done { opacity: 0.6; }
+  .checklist-mark { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; background: var(--surface-alt); color: var(--text-mute); border: 1.5px solid var(--border-strong); }
+  .checklist-item.done .checklist-mark { background: var(--primary); color: white; border-color: var(--primary); }
+  .checklist-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .checklist-item .arrow { color: var(--text-mute); font-size: 16px; }
+
+  /* Indicator-area picker (pills) */
+  .area-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .area-pill { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--border); font-size: 13px; font-weight: 500; color: var(--text-soft); min-height: 36px; }
+  .area-pill.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-dark); font-weight: 600; }
+  .indicator-area-tag { display: inline-block; padding: 2px 8px; background: var(--surface-alt); color: var(--text-soft); border-radius: 999px; font-size: 11px; font-weight: 600; margin-top: 4px; }
+
   /* Modal (confirm dialogs, setup guard) */
   .modal-backdrop { position: fixed; inset: 0; background: rgba(28,25,23,0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 200; animation: fadeIn .15s ease; }
   .modal { background: var(--surface); border-radius: 16px; padding: 24px; max-width: 360px; width: 100%; box-shadow: var(--shadow-lg); animation: fadeIn .18s ease; }
@@ -482,15 +501,17 @@ const DB = {
     } catch (e) { data = {}; }
 
     if (!Array.isArray(data.evaluations)) data.evaluations = [];
-    if (!Array.isArray(data.indicators) || data.indicators.length === 0) {
-      data.indicators = DEFAULTS.INDICATORS.map(text => ({ id: generateId(), text }));
-    }
     if (!Array.isArray(data.areas) || data.areas.length === 0) {
       data.areas = [...DEFAULTS.AREAS];
     }
     if (!Array.isArray(data.bimesters) || data.bimesters.length === 0) {
       data.bimesters = [...DEFAULTS.BIMESTERS];
     }
+    if (!Array.isArray(data.indicators) || data.indicators.length === 0) {
+      data.indicators = DEFAULTS.INDICATORS.map(text => ({ id: generateId(), text, area: data.areas[0] }));
+    }
+    // Backfill: assign first area to any indicator missing one
+    data.indicators.forEach(ind => { if (!ind.area) ind.area = data.areas[0]; });
     this._data = data;
     return data;
   },
@@ -519,18 +540,20 @@ const DB = {
 
   /* ---- Indicators ---- */
   getIndicators() { return this.load().indicators; },
+  getIndicatorsByArea(area) { return this.load().indicators.filter(i => i.area === area); },
 
-  addIndicator(text) {
-    const ind = { id: generateId(), text: text.trim() };
+  addIndicator(text, area) {
+    const ind = { id: generateId(), text: text.trim(), area: area || this.load().areas[0] };
     this.load().indicators.push(ind);
     this.save();
     return ind;
   },
 
-  updateIndicator(id, text) {
+  updateIndicator(id, text, area) {
     const ind = this.load().indicators.find(i => i.id === id);
     if (!ind) return null;
     ind.text = text.trim();
+    if (area) ind.area = area;
     this.save();
     return ind;
   },
@@ -554,6 +577,21 @@ const DB = {
     return true;
   },
 
+  updateArea(oldName, newName) {
+    const data = this.load();
+    const v = (newName || '').trim();
+    if (!v) return false;
+    const idx = data.areas.indexOf(oldName);
+    if (idx < 0) return false;
+    if (v === oldName) return true;
+    if (data.areas.includes(v)) return false;
+    data.areas[idx] = v;
+    data.indicators.forEach(ind => { if (ind.area === oldName) ind.area = v; });
+    data.evaluations.forEach(ev => { if (ev.area === oldName) ev.area = v; });
+    this.save();
+    return true;
+  },
+
   deleteArea(name) {
     const data = this.load();
     data.areas = data.areas.filter(a => a !== name);
@@ -569,6 +607,20 @@ const DB = {
     const data = this.load();
     if (data.bimesters.includes(v)) return false;
     data.bimesters.push(v);
+    this.save();
+    return true;
+  },
+
+  updateBimester(oldName, newName) {
+    const data = this.load();
+    const v = (newName || '').trim();
+    if (!v) return false;
+    const idx = data.bimesters.indexOf(oldName);
+    if (idx < 0) return false;
+    if (v === oldName) return true;
+    if (data.bimesters.includes(v)) return false;
+    data.bimesters[idx] = v;
+    data.evaluations.forEach(ev => { if (ev.bimestre === oldName) ev.bimestre = v; });
     this.save();
     return true;
   },
@@ -626,7 +678,9 @@ const state = {
   studentIdx: 0,
   evalMode: 'valoracion',   // 'valoracion' | 'nota'
   filter: { student: '', indicadorId: '', area: '', bimestre: '' },
-  indicatorEdit: { editingId: null, adding: false, draft: '' },
+  indicatorEdit: { editingId: null, adding: false, draft: '', areaDraft: null },
+  areaEdit: { editingName: null, draft: '' },
+  bimesterEdit: { editingName: null, draft: '' },
   expandedStudent: null,
   isHistoryView: false,
   modal: null,
@@ -646,6 +700,7 @@ const SCREENS = {
   'config-students': renderConfigStudents,
   'config-indicators': renderConfigIndicators,
   'config-areas': renderConfigAreas,
+  'config-bimesters': renderConfigBimesters,
 };
 
 function showScreen(name, payload) {
@@ -723,12 +778,16 @@ function renderEmpty(icon, title, text) {
 function renderHome() {
   const students = DB.getStudents();
   const indicators = DB.getIndicators();
+  const areas = DB.getAreas();
+  const bimesters = DB.getBimesters();
   return `
     ${renderTopbar()}
     <div class="home-hero">
       <div class="greeting">${esc(todayLabel())}</div>
       <div class="h1">Evaluar</div>
     </div>
+
+    ${renderSetupChecklist()}
 
     <div class="home-section">
       <div class="section-label">Evaluar</div>
@@ -757,6 +816,13 @@ function renderHome() {
     <div class="home-section">
       <div class="section-label">Configurar</div>
       <div class="home-link-list">
+        <button class="home-link" data-action="config-areas">
+          <div class="home-link-body">
+            <div class="home-link-title">Áreas</div>
+            <div class="home-link-meta">${areas.length} ${areas.length === 1 ? 'área' : 'áreas'}</div>
+          </div>
+          <span class="arrow">›</span>
+        </button>
         <button class="home-link" data-action="config-indicators">
           <div class="home-link-body">
             <div class="home-link-title">Indicadores</div>
@@ -764,10 +830,10 @@ function renderHome() {
           </div>
           <span class="arrow">›</span>
         </button>
-        <button class="home-link" data-action="config-areas">
+        <button class="home-link" data-action="config-bimesters">
           <div class="home-link-body">
-            <div class="home-link-title">Áreas y bimestres</div>
-            <div class="home-link-meta">Personalizar categorías</div>
+            <div class="home-link-title">Bimestres</div>
+            <div class="home-link-meta">${bimesters.length} ${bimesters.length === 1 ? 'bimestre' : 'bimestres'}</div>
           </div>
           <span class="arrow">›</span>
         </button>
@@ -776,13 +842,39 @@ function renderHome() {
   `;
 }
 
+function renderSetupChecklist() {
+  const areas = DB.getAreas();
+  const indicators = DB.getIndicators();
+  const bimesters = DB.getBimesters();
+  const students = DB.getStudents();
+  const items = [
+    { name: 'Áreas',       done: areas.length > 0,      screen: 'config-areas' },
+    { name: 'Indicadores', done: indicators.length > 0, screen: 'config-indicators' },
+    { name: 'Bimestres',   done: bimesters.length > 0,  screen: 'config-bimesters' },
+    { name: 'Alumnos',     done: students.length > 0,   screen: 'config-students' },
+  ];
+  if (items.every(i => i.done)) return '';
+  return `
+    <div class="setup-checklist">
+      <div class="setup-checklist-title">Para empezar</div>
+      <div class="setup-checklist-sub">Completá la configuración para poder evaluar.</div>
+      ${items.map(it => `
+        <button class="checklist-item ${it.done ? 'done' : ''}" data-action="${it.screen}">
+          <span class="checklist-mark">${it.done ? '✓' : '○'}</span>
+          <span class="checklist-name">${it.name}</span>
+          <span class="arrow">›</span>
+        </button>
+      `).join('')}
+    </div>`;
+}
+
 /* ============================================================
  * UI — Setup (start evaluation)
  * ============================================================ */
 function renderSetup() {
   const s = state.setup;
   const areas = DB.getAreas();
-  const indicators = DB.getIndicators();
+  const indicators = s.area ? DB.getIndicatorsByArea(s.area) : [];
   const bimesters = DB.getBimesters();
   const canStart = s.area && s.indicadorId && s.bimestre;
 
@@ -824,17 +916,19 @@ function renderSetup() {
         <span>Indicador</span>
         <button class="btn-ghost" data-action="config-indicators" style="font-size:11px;padding:4px 8px;border-radius:6px;text-transform:none;letter-spacing:0;color:var(--primary)">Gestionar</button>
       </div>
-      ${indicators.length === 0
-        ? renderEmpty('📋', 'Sin indicadores', 'Creá uno desde "Gestionar".')
-        : `<div class="indicator-scroll">
-            ${indicators.map((ind, i) => `
-              <button class="choice-item ${s.indicadorId === ind.id ? 'active' : ''}" data-action="set-indicador" data-value="${esc(ind.id)}">
-                <div class="choice-item-body">
-                  <div class="choice-item-title">${String(i + 1).padStart(2,'0')}. ${esc(ind.text)}</div>
-                </div>
-                <span class="check">${s.indicadorId === ind.id ? '✓' : '○'}</span>
-              </button>`).join('')}
-          </div>`}
+      ${!s.area
+        ? renderEmpty('📋', 'Elegí un área', 'Primero seleccioná un área arriba.')
+        : indicators.length === 0
+          ? renderEmpty('📋', 'Sin indicadores', `No hay indicadores cargados para ${esc(s.area)}. Creá uno desde "Gestionar".`)
+          : `<div class="indicator-scroll">
+              ${indicators.map((ind, i) => `
+                <button class="choice-item ${s.indicadorId === ind.id ? 'active' : ''}" data-action="set-indicador" data-value="${esc(ind.id)}">
+                  <div class="choice-item-body">
+                    <div class="choice-item-title">${String(i + 1).padStart(2,'0')}. ${esc(ind.text)}</div>
+                  </div>
+                  <span class="check">${s.indicadorId === ind.id ? '✓' : '○'}</span>
+                </button>`).join('')}
+            </div>`}
     </div>
 
     <button class="btn btn-primary btn-lg" data-action="start-eval" ${canStart ? '' : 'disabled'}>
@@ -1011,6 +1105,7 @@ function renderSummaryView(ev, isHistory) {
 
     <div class="stack-tight" style="margin-top:24px">
       ${!isHistory ? `<button class="btn btn-primary" data-action="continue-eval">Volver a evaluación</button>` : ''}
+      ${!isHistory ? `<button class="btn btn-secondary" data-action="eval-another">Evaluar otro indicador</button>` : ''}
       ${!isHistory ? `<button class="btn btn-secondary" data-action="goto-home">Ir al inicio</button>` : ''}
       ${isHistory ? `<button class="btn btn-danger" data-action="delete-eval">Eliminar evaluación</button>` : ''}
     </div>
@@ -1221,11 +1316,16 @@ function renderConfigStudents() {
     </div>
 
     ${students.length > 0 ? `
-      <div class="card">
-        <div class="section-label">Lista actual</div>
-        <div style="font-size:14px;color:var(--text-soft);line-height:1.6">
-          ${students.map(s => esc(s)).join(' · ')}
-        </div>
+      <div class="section-label">Lista actual (${students.length})</div>
+      <div class="stack-tight">
+        ${students.map(s => `
+          <div class="manage-item">
+            <div class="manage-text">${esc(s)}</div>
+            <div class="manage-actions">
+              <button class="icon-btn danger" data-action="remove-student" data-value="${esc(s)}" aria-label="Quitar">×</button>
+            </div>
+          </div>
+        `).join('')}
       </div>
     ` : renderEmpty('👤', 'Sin alumnos', 'Pegá una lista para comenzar.')}
 
@@ -1238,7 +1338,10 @@ function renderConfigStudents() {
  * ============================================================ */
 function renderConfigIndicators() {
   const indicators = DB.getIndicators();
+  const areas = DB.getAreas();
   const editState = state.indicatorEdit;
+  const showAreaPicker = areas.length > 1;
+  const areaDraft = editState.areaDraft || areas[0];
 
   return `
     ${renderTopbar({ back: true, title: 'Indicadores' })}
@@ -1251,6 +1354,16 @@ function renderConfigIndicators() {
       <div class="add-card">
         <div class="section-label">Nuevo indicador</div>
         <textarea class="input" id="new-indicator-input" rows="3" placeholder="Escribí el indicador...">${esc(editState.draft)}</textarea>
+        ${showAreaPicker ? `
+          <div>
+            <div class="muted" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--primary-dark)">Área</div>
+            <div class="area-pills">
+              ${areas.map(a => `
+                <button class="area-pill ${areaDraft === a ? 'active' : ''}" data-action="indicator-set-area" data-value="${esc(a)}">${esc(a)}</button>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
         <div class="manage-edit-actions">
           <button class="btn btn-secondary" data-action="cancel-add">Cancelar</button>
           <button class="btn btn-primary" data-action="save-add">Guardar</button>
@@ -1265,20 +1378,44 @@ function renderConfigIndicators() {
 
     ${indicators.length === 0
       ? renderEmpty('📋', 'Sin indicadores', 'Tocá "Nuevo indicador" para crear el primero.')
-      : `<div class="stack-tight">
-          ${indicators.map((ind, i) => renderIndicatorItem(ind, i, editState)).join('')}
-        </div>`}
+      : renderIndicatorsByArea(indicators, areas, editState, showAreaPicker)}
   `;
 }
 
-function renderIndicatorItem(ind, i, editState) {
+function renderIndicatorsByArea(indicators, areas, editState, showAreaPicker) {
+  if (!showAreaPicker) {
+    return `<div class="stack-tight">
+      ${indicators.map((ind, i) => renderIndicatorItem(ind, i, editState, areas, false)).join('')}
+    </div>`;
+  }
+  const groups = areas.map(a => ({ area: a, items: indicators.filter(i => i.area === a) })).filter(g => g.items.length > 0);
+  return groups.map(g => `
+    <div class="section-label" style="margin-top:16px;margin-bottom:8px">${esc(g.area)}</div>
+    <div class="stack-tight">
+      ${g.items.map((ind, i) => renderIndicatorItem(ind, i, editState, areas, true)).join('')}
+    </div>
+  `).join('');
+}
+
+function renderIndicatorItem(ind, i, editState, areas, showAreaPicker) {
   const num = String(i + 1).padStart(2, '0');
   if (editState.editingId === ind.id) {
+    const areaDraft = editState.areaDraft || ind.area || areas[0];
     return `
       <div class="manage-item">
         <span class="manage-num">${num}</span>
         <div class="manage-edit">
           <textarea class="input" id="edit-indicator-input" rows="3">${esc(editState.draft)}</textarea>
+          ${showAreaPicker ? `
+            <div>
+              <div class="muted" style="margin-bottom:6px;font-size:12px;font-weight:600">Área</div>
+              <div class="area-pills">
+                ${areas.map(a => `
+                  <button class="area-pill ${areaDraft === a ? 'active' : ''}" data-action="indicator-set-area" data-value="${esc(a)}">${esc(a)}</button>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
           <div class="manage-edit-actions">
             <button class="btn btn-secondary" data-action="cancel-edit">Cancelar</button>
             <button class="btn btn-primary" data-action="save-edit" data-value="${esc(ind.id)}">Guardar</button>
@@ -1298,57 +1435,103 @@ function renderIndicatorItem(ind, i, editState) {
 }
 
 /* ============================================================
- * UI — Config: Areas & Bimesters
+ * UI — Config: Areas
  * ============================================================ */
 function renderConfigAreas() {
   const areas = DB.getAreas();
-  const bimesters = DB.getBimesters();
+  const editState = state.areaEdit;
 
   return `
-    ${renderTopbar({ back: true, title: 'Áreas y bimestres' })}
+    ${renderTopbar({ back: true, title: 'Áreas' })}
     <div class="mb-20">
-      <div class="h2">Áreas y bimestres</div>
-      <p class="lead">Personalizá las categorías que usás.</p>
+      <div class="h2">Áreas</div>
+      <p class="lead">Materias o áreas curriculares que evaluás.</p>
     </div>
 
-    <div class="mb-24">
-      <div class="section-label">Áreas</div>
-      <form class="inline-add" id="add-area-form" novalidate>
-        <input class="input" id="new-area-input" placeholder="Ej: Matemática" autocomplete="off">
-        <button type="submit" class="btn btn-primary">+</button>
-      </form>
-      ${areas.length === 0
-        ? renderEmpty('📚', 'Sin áreas', 'Agregá al menos una.')
-        : `<div class="stack-tight">
-            ${areas.map(a => `
-              <div class="manage-item">
-                <div class="manage-text">${esc(a)}</div>
-                <div class="manage-actions">
-                  <button class="icon-btn danger" data-action="delete-area" data-value="${esc(a)}" aria-label="Eliminar">×</button>
-                </div>
-              </div>`).join('')}
-          </div>`}
-    </div>
+    <form class="inline-add" id="add-area-form" novalidate>
+      <input class="input" id="new-area-input" placeholder="Ej: Matemática" autocomplete="off">
+      <button type="submit" class="btn btn-primary">+</button>
+    </form>
 
-    <div>
-      <div class="section-label">Bimestres</div>
-      <form class="inline-add" id="add-bimester-form" novalidate>
-        <input class="input" id="new-bimester-input" placeholder="Ej: 1er Bimestre" autocomplete="off">
-        <button type="submit" class="btn btn-primary">+</button>
-      </form>
-      ${bimesters.length === 0
-        ? renderEmpty('📅', 'Sin bimestres', 'Agregá al menos uno.')
-        : `<div class="stack-tight">
-            ${bimesters.map(b => `
-              <div class="manage-item">
-                <div class="manage-text">${esc(b)}</div>
-                <div class="manage-actions">
-                  <button class="icon-btn danger" data-action="delete-bimester" data-value="${esc(b)}" aria-label="Eliminar">×</button>
-                </div>
-              </div>`).join('')}
-          </div>`}
-    </div>
+    ${areas.length === 0
+      ? renderEmpty('📚', 'Sin áreas', 'Agregá al menos una.')
+      : `<div class="stack-tight">
+          ${areas.map(a => renderAreaItem(a, editState)).join('')}
+        </div>`}
   `;
+}
+
+function renderAreaItem(name, editState) {
+  if (editState.editingName === name) {
+    return `
+      <div class="manage-item">
+        <div class="manage-edit">
+          <input class="input" id="edit-area-input" value="${esc(editState.draft)}" autocomplete="off">
+          <div class="manage-edit-actions">
+            <button class="btn btn-secondary" data-action="cancel-area-edit">Cancelar</button>
+            <button class="btn btn-primary" data-action="save-area-edit" data-value="${esc(name)}">Guardar</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="manage-item">
+      <div class="manage-text">${esc(name)}</div>
+      <div class="manage-actions">
+        <button class="icon-btn" data-action="start-area-edit" data-value="${esc(name)}" aria-label="Editar">✎</button>
+        <button class="icon-btn danger" data-action="delete-area" data-value="${esc(name)}" aria-label="Eliminar">×</button>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+ * UI — Config: Bimesters
+ * ============================================================ */
+function renderConfigBimesters() {
+  const bimesters = DB.getBimesters();
+  const editState = state.bimesterEdit;
+
+  return `
+    ${renderTopbar({ back: true, title: 'Bimestres' })}
+    <div class="mb-20">
+      <div class="h2">Bimestres</div>
+      <p class="lead">Períodos lectivos (bimestres, trimestres, etc.).</p>
+    </div>
+
+    <form class="inline-add" id="add-bimester-form" novalidate>
+      <input class="input" id="new-bimester-input" placeholder="Ej: 1er Bimestre" autocomplete="off">
+      <button type="submit" class="btn btn-primary">+</button>
+    </form>
+
+    ${bimesters.length === 0
+      ? renderEmpty('📅', 'Sin bimestres', 'Agregá al menos uno.')
+      : `<div class="stack-tight">
+          ${bimesters.map(b => renderBimesterItem(b, editState)).join('')}
+        </div>`}
+  `;
+}
+
+function renderBimesterItem(name, editState) {
+  if (editState.editingName === name) {
+    return `
+      <div class="manage-item">
+        <div class="manage-edit">
+          <input class="input" id="edit-bimester-input" value="${esc(editState.draft)}" autocomplete="off">
+          <div class="manage-edit-actions">
+            <button class="btn btn-secondary" data-action="cancel-bimester-edit">Cancelar</button>
+            <button class="btn btn-primary" data-action="save-bimester-edit" data-value="${esc(name)}">Guardar</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="manage-item">
+      <div class="manage-text">${esc(name)}</div>
+      <div class="manage-actions">
+        <button class="icon-btn" data-action="start-bimester-edit" data-value="${esc(name)}" aria-label="Editar">✎</button>
+        <button class="icon-btn danger" data-action="delete-bimester" data-value="${esc(name)}" aria-label="Eliminar">×</button>
+      </div>
+    </div>`;
 }
 
 /* ============================================================
@@ -1385,6 +1568,17 @@ function attachHandlers() {
   if (areaForm) areaForm.addEventListener('submit', onAddArea);
   const bimForm = $('add-bimester-form');
   if (bimForm) bimForm.addEventListener('submit', onAddBimester);
+
+  const editArea = $('edit-area-input');
+  if (editArea) {
+    editArea.addEventListener('input', e => { state.areaEdit.draft = e.target.value; });
+    setTimeout(() => { editArea.focus(); editArea.setSelectionRange(editArea.value.length, editArea.value.length); }, 50);
+  }
+  const editBim = $('edit-bimester-input');
+  if (editBim) {
+    editBim.addEventListener('input', e => { state.bimesterEdit.draft = e.target.value; });
+    setTimeout(() => { editBim.focus(); editBim.setSelectionRange(editBim.value.length, editBim.value.length); }, 50);
+  }
 }
 
 function onAction(e) {
@@ -1444,7 +1638,11 @@ const ACTIONS = {
   },
   'config-areas':       () => showScreen('config-areas'),
 
-  'set-area':       (v) => { state.setup.area = v; render(); },
+  'set-area':       (v) => {
+    if (state.setup.area !== v) state.setup.indicadorId = null;
+    state.setup.area = v;
+    render();
+  },
   'set-bimestre':   (v) => { state.setup.bimestre = v; render(); },
   'set-indicador':  (v) => { state.setup.indicadorId = v; render(); },
   'start-eval':     () => startEvaluation(),
@@ -1489,37 +1687,99 @@ const ACTIONS = {
   },
 
   'start-add': () => {
-    state.indicatorEdit = { editingId: null, adding: true, draft: '' };
+    const setupArea = state.setup && state.setup.area;
+    state.indicatorEdit = { editingId: null, adding: true, draft: '', areaDraft: setupArea || DB.getAreas()[0] || null };
     render();
   },
   'cancel-add': () => {
-    state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     render();
   },
   'save-add': () => {
     const text = (state.indicatorEdit.draft || '').trim();
     if (!text) { toast('Escribí el indicador'); return; }
-    DB.addIndicator(text);
-    state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+    const area = state.indicatorEdit.areaDraft || DB.getAreas()[0];
+    DB.addIndicator(text, area);
+    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     toast('Indicador creado');
     render();
   },
   'start-edit': (v) => {
     const ind = DB.getIndicators().find(i => i.id === v);
-    state.indicatorEdit = { editingId: v, adding: false, draft: ind ? ind.text : '' };
+    state.indicatorEdit = { editingId: v, adding: false, draft: ind ? ind.text : '', areaDraft: ind ? ind.area : null };
     render();
   },
   'cancel-edit': () => {
-    state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     render();
   },
   'save-edit': (v) => {
     const text = (state.indicatorEdit.draft || '').trim();
     if (!text) { toast('No puede quedar vacío'); return; }
-    DB.updateIndicator(v, text);
-    state.indicatorEdit = { editingId: null, adding: false, draft: '' };
+    const area = state.indicatorEdit.areaDraft;
+    DB.updateIndicator(v, text, area);
+    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     toast('Indicador actualizado');
     render();
+  },
+  'indicator-set-area': (v) => {
+    state.indicatorEdit.areaDraft = v;
+    render();
+  },
+
+  'start-area-edit': (v) => {
+    state.areaEdit = { editingName: v, draft: v };
+    render();
+  },
+  'cancel-area-edit': () => {
+    state.areaEdit = { editingName: null, draft: '' };
+    render();
+  },
+  'save-area-edit': (v) => {
+    const next = (state.areaEdit.draft || '').trim();
+    if (!next) { toast('No puede quedar vacío'); return; }
+    const ok = DB.updateArea(v, next);
+    if (!ok) { toast('Ese nombre ya existe'); return; }
+    state.areaEdit = { editingName: null, draft: '' };
+    toast('Área actualizada');
+    render();
+  },
+
+  'start-bimester-edit': (v) => {
+    state.bimesterEdit = { editingName: v, draft: v };
+    render();
+  },
+  'cancel-bimester-edit': () => {
+    state.bimesterEdit = { editingName: null, draft: '' };
+    render();
+  },
+  'save-bimester-edit': (v) => {
+    const next = (state.bimesterEdit.draft || '').trim();
+    if (!next) { toast('No puede quedar vacío'); return; }
+    const ok = DB.updateBimester(v, next);
+    if (!ok) { toast('Ese nombre ya existe'); return; }
+    state.bimesterEdit = { editingName: null, draft: '' };
+    toast('Bimestre actualizado');
+    render();
+  },
+
+  'remove-student': (v) => {
+    showConfirm({
+      title: `¿Quitar a "${v}"?`,
+      text: 'Las evaluaciones anteriores se mantienen.',
+      onConfirm: () => {
+        const next = DB.getStudents().filter(s => s !== v);
+        DB.saveStudents(next);
+        toast('Alumno quitado');
+        render();
+      }
+    });
+  },
+
+  'eval-another': () => {
+    state.setup.indicadorId = null;
+    state.currentEval = null;
+    showScreen('setup');
   },
   'delete-indicator': (v) => {
     const ind = DB.getIndicators().find(i => i.id === v);
