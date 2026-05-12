@@ -430,6 +430,21 @@ const VALORACIONES = [
 ];
 const VAL_MAP = Object.fromEntries(VALORACIONES.map(v => [v.id, v]));
 
+const EMPTY_FILTER = { student: '', indicadorId: '', area: '', bimestre: '' };
+
+function countValoraciones(ev) {
+  const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
+  ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
+  return counts;
+}
+
+function matchesEval(ev, f) {
+  if (f.area && ev.area !== f.area) return false;
+  if (f.bimestre && ev.bimestre !== f.bimestre) return false;
+  if (f.indicadorId && ev.indicadorId !== f.indicadorId) return false;
+  return true;
+}
+
 /* ============================================================
  * UTILS
  * ============================================================ */
@@ -472,7 +487,6 @@ function currentBimestreLabel(bimesters) {
 
 function notaToValoracion(n) {
   if (n >= 9) return 'logrado';
-  if (n >= 7) return 'proceso';
   if (n >= 5) return 'proceso';
   return 'apoyo';
 }
@@ -585,7 +599,8 @@ const DB = {
     const v = name.trim();
     if (!v) return false;
     const data = this.load();
-    if (data.areas.includes(v)) return false;
+    const norm = v.toLowerCase();
+    if (data.areas.some(a => a.toLowerCase() === norm)) return false;
     data.areas.push(v);
     this.save();
     return true;
@@ -598,7 +613,8 @@ const DB = {
     const idx = data.areas.indexOf(oldName);
     if (idx < 0) return false;
     if (v === oldName) return true;
-    if (data.areas.includes(v)) return false;
+    const norm = v.toLowerCase();
+    if (data.areas.some((a, i) => i !== idx && a.toLowerCase() === norm)) return false;
     data.areas[idx] = v;
     data.indicators.forEach(ind => { if (ind.area === oldName) ind.area = v; });
     data.evaluations.forEach(ev => { if (ev.area === oldName) ev.area = v; });
@@ -609,6 +625,12 @@ const DB = {
   deleteArea(name) {
     const data = this.load();
     data.areas = data.areas.filter(a => a !== name);
+    const fallback = data.areas[0];
+    if (fallback) {
+      data.indicators.forEach(ind => { if (ind.area === name) ind.area = fallback; });
+    } else {
+      data.indicators = data.indicators.filter(ind => ind.area !== name);
+    }
     this.save();
   },
 
@@ -619,7 +641,8 @@ const DB = {
     const v = name.trim();
     if (!v) return false;
     const data = this.load();
-    if (data.bimesters.includes(v)) return false;
+    const norm = v.toLowerCase();
+    if (data.bimesters.some(b => b.toLowerCase() === norm)) return false;
     data.bimesters.push(v);
     this.save();
     return true;
@@ -632,7 +655,8 @@ const DB = {
     const idx = data.bimesters.indexOf(oldName);
     if (idx < 0) return false;
     if (v === oldName) return true;
-    if (data.bimesters.includes(v)) return false;
+    const norm = v.toLowerCase();
+    if (data.bimesters.some((b, i) => i !== idx && b.toLowerCase() === norm)) return false;
     data.bimesters[idx] = v;
     data.evaluations.forEach(ev => { if (ev.bimestre === oldName) ev.bimestre = v; });
     this.save();
@@ -691,12 +715,11 @@ const state = {
   currentEval: null,
   studentIdx: 0,
   evalMode: 'valoracion',   // 'valoracion' | 'nota'
-  filter: { student: '', indicadorId: '', area: '', bimestre: '' },
+  filter: { ...EMPTY_FILTER },
   indicatorEdit: { editingId: null, adding: false, draft: '', areaDraft: null },
   areaEdit: { editingName: null, draft: '' },
   bimesterEdit: { editingName: null, draft: '' },
   expandedStudent: null,
-  isHistoryView: false,
   modal: null,
 };
 
@@ -1055,8 +1078,7 @@ function renderSummaryView(ev, isHistory) {
   const total = ev.records.length;
   const completed = ev.records.filter(r => r.valoracion).length;
   const pending = total - completed;
-  const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
-  ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
+  const counts = countValoraciones(ev);
   const observations = ev.records.filter(r => r.observacion && r.observacion.trim());
 
   return `
@@ -1160,9 +1182,7 @@ function renderHistory() {
   const bimesters = DB.getBimesters();
 
   const filtered = all.filter(ev => {
-    if (f.area && ev.area !== f.area) return false;
-    if (f.bimestre && ev.bimestre !== f.bimestre) return false;
-    if (f.indicadorId && ev.indicadorId !== f.indicadorId) return false;
+    if (!matchesEval(ev, f)) return false;
     if (f.student && !ev.records.some(r => r.alumno === f.student && r.valoracion)) return false;
     return true;
   });
@@ -1208,8 +1228,7 @@ function renderHistory() {
 }
 
 function renderHistoryItem(ev) {
-  const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
-  ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
+  const counts = countValoraciones(ev);
   const completed = ev.records.filter(r => r.valoracion).length;
   return `
     <button class="history-item" data-action="open-eval" data-id="${esc(ev.id)}">
@@ -1554,7 +1573,6 @@ function renderBimesterItem(name, editState) {
  * ============================================================ */
 function attachHandlers() {
   document.querySelectorAll('[data-action]').forEach(el => {
-    const action = el.dataset.action;
     if (el.tagName === 'SELECT') {
       el.addEventListener('change', onFilterChange);
     } else {
@@ -1564,8 +1582,12 @@ function attachHandlers() {
 
   const obsInput = $('obs-input');
   if (obsInput) {
-    obsInput.addEventListener('input', onObsInput);
-    obsInput.addEventListener('blur', onObsBlur);
+    // Capture idx + evalId at mount time so blur saves to the correct
+    // record even if the user navigates before blur fires.
+    const capturedIdx = state.studentIdx;
+    const capturedEvalId = state.currentEval && state.currentEval.id;
+    obsInput.addEventListener('input', (e) => onObsInput(e, capturedIdx, capturedEvalId));
+    obsInput.addEventListener('blur', () => onObsBlur(capturedIdx, capturedEvalId));
   }
 
   const newInd = $('new-indicator-input');
@@ -1637,7 +1659,7 @@ const ACTIONS = {
   },
 
   'open-history': () => {
-    state.filter = { student: '', indicadorId: '', area: '', bimestre: '' };
+    state.filter = { ...EMPTY_FILTER };
     showScreen('history');
   },
 
@@ -1681,7 +1703,7 @@ const ACTIONS = {
   'toggle-obs': () => toggleObs(),
 
   'filter-clear': () => {
-    state.filter = { student: '', indicadorId: '', area: '', bimestre: '' };
+    state.filter = { ...EMPTY_FILTER };
     render();
   },
 
@@ -1691,10 +1713,16 @@ const ACTIONS = {
   },
 
   'delete-eval': () => {
-    if (!confirm('¿Eliminar esta evaluación? No se puede deshacer.')) return;
-    DB.deleteEvaluation(state.currentEval.id);
-    toast('Evaluación eliminada');
-    navigate('history');
+    showConfirm({
+      title: '¿Eliminar esta evaluación?',
+      text: 'No se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      onConfirm: () => {
+        DB.deleteEvaluation(state.currentEval.id);
+        toast('Evaluación eliminada');
+        navigate('history');
+      }
+    });
   },
 
   'toggle-student': (v) => {
@@ -1795,7 +1823,7 @@ const ACTIONS = {
   'eval-another': () => {
     state.setup.indicadorId = null;
     state.currentEval = null;
-    showScreen('setup');
+    navigate('setup');
   },
   'delete-indicator': (v) => {
     const ind = DB.getIndicators().find(i => i.id === v);
@@ -1814,16 +1842,27 @@ const ACTIONS = {
   'bulk-replace': () => bulkSaveStudents(true),
   'bulk-add':     () => bulkSaveStudents(false),
   'reset-students': () => {
-    if (!confirm('¿Restaurar la lista de ejemplo? Se reemplazará tu lista actual.')) return;
-    DB.saveStudents([...DEFAULTS.STUDENTS]);
-    toast('Lista restaurada');
-    render();
+    showConfirm({
+      title: '¿Restaurar la lista de ejemplo?',
+      text: 'Se reemplazará tu lista actual.',
+      confirmLabel: 'Restaurar',
+      onConfirm: () => {
+        DB.saveStudents([...DEFAULTS.STUDENTS]);
+        toast('Lista restaurada');
+        render();
+      }
+    });
   },
 
   'delete-area': (v) => {
     if (DB.getAreas().length <= 1) { toast('Tiene que quedar al menos un área'); return; }
+    const affected = DB.getIndicators().filter(i => i.area === v).length;
+    const text = affected > 0
+      ? `${affected} ${affected === 1 ? 'indicador queda reasignado' : 'indicadores quedan reasignados'} al área restante.`
+      : '';
     showConfirm({
       title: `¿Eliminar "${v}"?`,
+      text,
       onConfirm: () => {
         DB.deleteArea(v);
         toast('Área eliminada');
@@ -1924,25 +1963,43 @@ function setNota(n) {
 function toggleObs() {
   const toggle = document.querySelector('.obs-toggle');
   const body = $('obs-body');
+  if (!toggle || !body) return;
   toggle.classList.toggle('open');
   body.classList.toggle('open');
+  const rec = state.currentEval && state.currentEval.records[state.studentIdx];
+  const hasContent = !!(rec && rec.observacion && rec.observacion.length);
+  toggle.classList.toggle('has-content', hasContent);
+  const labelSpan = toggle.querySelector('span');
+  if (labelSpan) labelSpan.textContent = hasContent ? 'Observación' : 'Agregar observación';
   if (body.classList.contains('open')) {
     setTimeout(() => $('obs-input')?.focus(), 200);
   }
 }
 
 let obsTimer = null;
-function onObsInput(e) {
+function onObsInput(e, capturedIdx, capturedEvalId) {
   const ev = state.currentEval;
-  const rec = ev.records[state.studentIdx];
+  if (!ev || ev.id !== capturedEvalId) return;
+  const rec = ev.records[capturedIdx];
+  if (!rec) return;
   rec.observacion = e.target.value;
+  // Keep the toggle label/has-content in sync without a full re-render.
+  const toggle = document.querySelector('.obs-toggle');
+  if (toggle) {
+    const hasContent = rec.observacion.length > 0;
+    toggle.classList.toggle('has-content', hasContent);
+    const labelSpan = toggle.querySelector('span');
+    if (labelSpan) labelSpan.textContent = hasContent ? 'Observación' : 'Agregar observación';
+  }
   clearTimeout(obsTimer);
   obsTimer = setTimeout(() => DB.updateRecord(ev.id, rec.alumno, { observacion: rec.observacion }), 400);
 }
 
-function onObsBlur() {
+function onObsBlur(capturedIdx, capturedEvalId) {
   const ev = state.currentEval;
-  const rec = ev.records[state.studentIdx];
+  if (!ev || ev.id !== capturedEvalId) return;
+  const rec = ev.records[capturedIdx];
+  if (!rec) return;
   DB.updateRecord(ev.id, rec.alumno, { observacion: rec.observacion });
 }
 
@@ -1958,19 +2015,26 @@ function bulkSaveStudents(replace) {
   if (!input) return;
   const parsed = parseStudentList(input.value);
   if (parsed.length === 0) { toast('Pegá al menos un nombre'); return; }
-  const current = DB.getStudents();
   if (replace) {
-    if (!confirm(`¿Reemplazar con ${parsed.length} ${parsed.length === 1 ? 'alumno' : 'alumnos'}? Las evaluaciones anteriores se mantienen.`)) return;
-    DB.saveStudents(parsed);
-    toast(`Lista reemplazada (${parsed.length})`);
-  } else {
-    const merged = [...current];
-    let added = 0;
-    parsed.forEach(name => { if (!merged.includes(name)) { merged.push(name); added++; } });
-    if (added === 0) { toast('Ya estaban todos en la lista'); return; }
-    DB.saveStudents(merged);
-    toast(`${added} ${added === 1 ? 'alumno agregado' : 'alumnos agregados'}`);
+    showConfirm({
+      title: '¿Reemplazar lista?',
+      text: `Quedarán ${parsed.length} ${parsed.length === 1 ? 'alumno' : 'alumnos'}. Las evaluaciones anteriores se mantienen.`,
+      confirmLabel: 'Reemplazar',
+      onConfirm: () => {
+        DB.saveStudents(parsed);
+        toast(`Lista reemplazada (${parsed.length})`);
+        render();
+      }
+    });
+    return;
   }
+  const current = DB.getStudents();
+  const merged = [...current];
+  let added = 0;
+  parsed.forEach(name => { if (!merged.includes(name)) { merged.push(name); added++; } });
+  if (added === 0) { toast('Ya estaban todos en la lista'); return; }
+  DB.saveStudents(merged);
+  toast(`${added} ${added === 1 ? 'alumno agregado' : 'alumnos agregados'}`);
   render();
 }
 
@@ -2011,12 +2075,7 @@ function csvEscape(val) {
 function exportCSV() {
   const evals = DB.getEvaluations();
   const f = state.filter;
-  const filtered = evals.filter(ev => {
-    if (f.area && ev.area !== f.area) return false;
-    if (f.bimestre && ev.bimestre !== f.bimestre) return false;
-    if (f.indicadorId && ev.indicadorId !== f.indicadorId) return false;
-    return true;
-  });
+  const filtered = evals.filter(ev => matchesEval(ev, f));
 
   const rows = [];
   filtered.forEach(ev => {
@@ -2114,8 +2173,10 @@ function init() {
   DB.load();
   state.screen = 'home';
   attachSwipeNav();
-  render();
+  // Decide onboarding visibility before first paint so it never flashes
+  // behind the home screen.
   showOnboardingIfNeeded();
+  render();
 }
 
 init();
