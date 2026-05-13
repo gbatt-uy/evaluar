@@ -316,7 +316,18 @@
   /* ============================================================
    * MANAGE / CONFIG ITEMS
    * ============================================================ */
-  .manage-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px; }
+  .manage-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; }
+  .manage-item-clickable { align-items: center; transition: background .12s ease; }
+  .manage-item-clickable:active { background: var(--surface-alt); }
+
+  .check-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; width: 100%; text-align: left; min-height: 52px; transition: background .12s ease, border-color .12s ease; }
+  .check-row:active { background: var(--surface-alt); }
+  .check-row.checked { background: var(--accent-3-soft); border-color: rgba(14,163,113,0.4); }
+  .check-box { width: 24px; height: 24px; border-radius: 6px; border: 1.5px solid var(--border-strong); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; font-weight: 700; color: white; transition: background .15s ease, border-color .15s ease; }
+  .check-box.on { background: var(--accent-3); border-color: var(--accent-3); }
+  .check-body { flex: 1; min-width: 0; }
+  .check-name { font-size: 15px; font-weight: 500; }
+  .check-meta { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
   .student-group-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='%23a8a29e'%3E%3Cpath d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 8px; }
   .manage-num { font-size: 12px; font-weight: 700; color: var(--text-mute); min-width: 22px; padding-top: 4px; }
   .manage-text { flex: 1; font-size: 14px; line-height: 1.4; min-width: 0; word-wrap: break-word; padding-top: 2px; }
@@ -421,6 +432,46 @@
   .mb-16 { margin-bottom: 16px; }
   .mb-20 { margin-bottom: 20px; }
   .mb-24 { margin-bottom: 24px; }
+
+  /* ============================================================
+   * TAB BAR (bottom nav)
+   * ============================================================ */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding: 6px 8px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 4px;
+    z-index: 50;
+  }
+  .tab-bar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px;
+    color: var(--text-mute);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+    min-height: 52px;
+    transition: color .15s ease, background .15s ease;
+  }
+  .tab-bar-item:active { background: var(--surface-alt); }
+  .tab-bar-item.active { color: var(--primary); }
+  .tab-bar-item .tab-icon { font-size: 20px; line-height: 1; }
+  .screen.has-tab-bar { padding-bottom: 88px; }
 
   @media (max-width: 360px) {
     .h1 { font-size: 28px; }
@@ -873,7 +924,7 @@ const state = {
   indicatorEdit: { editingId: null, adding: false, draft: '', areaDraft: null },
   areaEdit: { editingName: null, draft: '' },
   bimesterEdit: { editingName: null, draft: '' },
-  groupEdit: { editingName: null, draft: '' },
+  manageGroupName: null,
   studentsFilter: { group: '' },
   expandedStudent: null,
   modal: null,
@@ -884,6 +935,7 @@ const state = {
  * ============================================================ */
 const SCREENS = {
   home: renderHome,
+  'config-hub': renderConfigHub,
   'setup-init': renderSetupInit,
   setup: renderSetup,
   evaluation: renderEvaluation,
@@ -896,7 +948,11 @@ const SCREENS = {
   'config-areas': renderConfigAreas,
   'config-bimesters': renderConfigBimesters,
   'config-groups': renderConfigGroups,
+  'manage-group': renderManageGroup,
 };
+
+// Screens that show the bottom tab bar — top-level destinations
+const TAB_BAR_SCREENS = new Set(['home', 'config-hub']);
 
 function isSetupComplete() {
   return DB.getAreas().length > 0
@@ -922,13 +978,13 @@ function showScreen(name, payload) {
 
 function goBack() {
   let next = state.backStack.pop() || 'home';
-  if (next === 'home' && !isSetupComplete()) next = 'setup-init';
+  if ((next === 'home' || next === 'config-hub') && !isSetupComplete()) next = 'setup-init';
   state.screen = next;
   render();
 }
 
 function navigate(name, payload) {
-  if (name === 'home' && !isSetupComplete()) name = 'setup-init';
+  if ((name === 'home' || name === 'config-hub') && !isSetupComplete()) name = 'setup-init';
   state.screen = name;
   if (payload) Object.assign(state, payload);
   state.backStack = [];
@@ -937,8 +993,25 @@ function navigate(name, payload) {
 
 function render() {
   const renderer = SCREENS[state.screen] || renderHome;
-  $('app').innerHTML = `<div class="screen">${renderer()}</div>${renderModal()}`;
+  const showTabBar = TAB_BAR_SCREENS.has(state.screen);
+  $('app').innerHTML = `<div class="screen${showTabBar ? ' has-tab-bar' : ''}">${renderer()}</div>${showTabBar ? renderTabBar() : ''}${renderModal()}`;
   attachHandlers();
+}
+
+function renderTabBar() {
+  const tabs = [
+    { id: 'home',       icon: '⌂', label: 'Inicio' },
+    { id: 'config-hub', icon: '⚙', label: 'Config' },
+  ];
+  return `
+    <nav class="tab-bar" role="navigation" aria-label="Navegación principal">
+      ${tabs.map(t => `
+        <button class="tab-bar-item ${state.screen === t.id ? 'active' : ''}" data-action="goto-${t.id}" aria-current="${state.screen === t.id ? 'page' : 'false'}">
+          <span class="tab-icon" aria-hidden="true">${t.icon}</span>
+          <span>${esc(t.label)}</span>
+        </button>
+      `).join('')}
+    </nav>`;
 }
 
 function renderModal() {
@@ -966,8 +1039,10 @@ function showConfirm({ title, text = '', confirmLabel = 'Sí', cancelLabel = 'Ca
  * UI — shared components
  * ============================================================ */
 function renderTopbar({ back = false, title = '', right = '' } = {}) {
-  const onHomeLike = state.screen === 'home' || state.screen === 'setup-init';
-  const homeBtn = !onHomeLike
+  // Don't double up: when the tab bar is visible it already exposes 'Inicio',
+  // and onboarding has its own escape hatch.
+  const showHomeBtn = !TAB_BAR_SCREENS.has(state.screen) && state.screen !== 'setup-init';
+  const homeBtn = showHomeBtn
     ? `<button class="topbar-home" data-action="goto-home" aria-label="Inicio" title="Inicio">⌂</button>`
     : '';
   return `
@@ -993,11 +1068,6 @@ function renderEmpty(icon, title, text) {
  * UI — Home
  * ============================================================ */
 function renderHome() {
-  const students = DB.getStudents();
-  const indicators = DB.getIndicators();
-  const areas = DB.getAreas();
-  const bimesters = DB.getBimesters();
-  const groups = DB.getGroups();
   return `
     ${renderTopbar()}
     <div class="home-hero">
@@ -1006,7 +1076,6 @@ function renderHome() {
     </div>
 
     <div class="home-section">
-      <div class="section-label">Evaluar</div>
       <button class="home-primary-btn" data-action="new-eval">
         <span>Nueva evaluación</span>
         <span class="sub">Registrá el desempeño de tu clase</span>
@@ -1028,9 +1097,23 @@ function renderHome() {
         </button>
       </div>
     </div>
+  `;
+}
+
+function renderConfigHub() {
+  const students = DB.getStudents();
+  const indicators = DB.getIndicators();
+  const areas = DB.getAreas();
+  const bimesters = DB.getBimesters();
+  const groups = DB.getGroups();
+  return `
+    ${renderTopbar()}
+    <div class="home-hero">
+      <div class="greeting">Configurar</div>
+      <div class="h1">Tu app</div>
+    </div>
 
     <div class="home-section">
-      <div class="section-label">Configurar</div>
       <div class="home-link-list">
         <button class="home-link" data-action="config-areas" data-accent="orange">
           <div class="home-link-body">
@@ -1057,6 +1140,13 @@ function renderHome() {
           <div class="home-link-body">
             <div class="home-link-title">Grupos</div>
             <div class="home-link-meta">${groups.length === 0 ? 'Agrupá alumnos por clase' : `${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}`}</div>
+          </div>
+          <span class="arrow">›</span>
+        </button>
+        <button class="home-link" data-action="config-students" data-accent="green">
+          <div class="home-link-body">
+            <div class="home-link-title">Alumnos</div>
+            <div class="home-link-meta">${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'}</div>
           </div>
           <span class="arrow">›</span>
         </button>
@@ -1344,7 +1434,7 @@ function renderSummaryView(ev, isHistory) {
 
   return `
     ${renderTopbar({
-      back: true,
+      back: isHistory,
       title: isHistory ? 'Detalle' : 'Resumen'
     })}
     <div class="indicator-pill">${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
@@ -1837,7 +1927,6 @@ function renderConfigBimesters() {
  * ============================================================ */
 function renderConfigGroups() {
   const groups = DB.getGroups();
-  const editState = state.groupEdit;
   const students = DB.getStudents();
   const data = DB._data;
 
@@ -1856,36 +1945,77 @@ function renderConfigGroups() {
     ${groups.length === 0
       ? renderEmpty('👥', 'Sin grupos', 'Agregá uno para organizar tus alumnos.')
       : `<div class="stack-tight">
-          ${groups.map(g => renderGroupItem(g, editState, students, data)).join('')}
+          ${groups.map(g => renderGroupItem(g, students, data)).join('')}
         </div>`}
   `;
 }
 
-function renderGroupItem(name, editState, students, data) {
-  if (editState.editingName === name) {
-    return `
-      <div class="manage-item">
-        <div class="manage-edit">
-          <input class="input" id="edit-group-input" value="${esc(editState.draft)}" autocomplete="off">
-          <div class="manage-edit-actions">
-            <button class="btn btn-secondary" data-action="cancel-group-edit">Cancelar</button>
-            <button class="btn btn-primary" data-action="save-group-edit" data-value="${esc(name)}">Guardar</button>
-          </div>
-        </div>
-      </div>`;
-  }
+function renderGroupItem(name, students, data) {
   const count = students.filter(s => data.studentGroups[s] === name).length;
   return `
-    <div class="manage-item">
-      <div class="manage-text">
+    <button class="manage-item manage-item-clickable" data-action="open-manage-group" data-value="${esc(name)}">
+      <div class="manage-text" style="text-align:left">
         ${esc(name)}
         <div class="muted" style="font-size:12px;margin-top:2px">${count} ${count === 1 ? 'alumno' : 'alumnos'}</div>
       </div>
-      <div class="manage-actions">
-        <button class="icon-btn" data-action="start-group-edit" data-value="${esc(name)}" aria-label="Editar">✎</button>
-        <button class="icon-btn danger" data-action="delete-group" data-value="${esc(name)}" aria-label="Eliminar">×</button>
+      <span class="arrow" style="color:var(--text-mute);font-size:18px;margin-left:auto">›</span>
+    </button>`;
+}
+
+/* ============================================================
+ * UI — Manage group (rename + assign students with checkboxes)
+ * ============================================================ */
+function renderManageGroup() {
+  const target = state.manageGroupName;
+  const groups = DB.getGroups();
+  if (!target || !groups.includes(target)) {
+    // Group no longer exists — bounce back to config-groups.
+    state.screen = 'config-groups';
+    return renderConfigGroups();
+  }
+  const students = DB.getStudents();
+  const data = DB._data;
+  const inGroup = students.filter(s => data.studentGroups[s] === target);
+
+  return `
+    ${renderTopbar({ back: true, title: 'Grupo' })}
+    <div class="mb-20">
+      <div class="h2">${esc(target)}</div>
+      <p class="lead">${inGroup.length} ${inGroup.length === 1 ? 'alumno asignado' : 'alumnos asignados'}</p>
+    </div>
+
+    <div class="card mb-16">
+      <div class="section-label">Nombre del grupo</div>
+      <div class="row" style="margin-top:8px">
+        <input class="input" id="rename-group-input" value="${esc(target)}" autocomplete="off">
+        <button class="btn btn-primary" data-action="rename-group" data-value="${esc(target)}" style="flex:0 0 auto;width:auto;padding:0 18px">Guardar</button>
       </div>
-    </div>`;
+    </div>
+
+    <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Alumnos</span>
+      <span style="font-size:11px;font-weight:500;color:var(--text-mute);text-transform:none;letter-spacing:0">Tocá para asignar / quitar</span>
+    </div>
+    ${students.length === 0
+      ? renderEmpty('👤', 'Sin alumnos', 'Agregá alumnos desde Configurar → Alumnos.')
+      : `<div class="stack-tight">
+          ${students.map(s => {
+            const studentGroup = data.studentGroups[s] || null;
+            const inThis = studentGroup === target;
+            const inOther = studentGroup && studentGroup !== target;
+            return `
+              <button class="check-row ${inThis ? 'checked' : ''}" data-action="toggle-student-in-group" data-student="${esc(s)}" data-group="${esc(target)}">
+                <span class="check-box ${inThis ? 'on' : ''}" aria-hidden="true">${inThis ? '✓' : ''}</span>
+                <div class="check-body">
+                  <div class="check-name">${esc(s)}</div>
+                  ${inOther ? `<div class="check-meta">En ${esc(studentGroup)}</div>` : ''}
+                </div>
+              </button>`;
+          }).join('')}
+        </div>`}
+
+    <button class="btn btn-danger" data-action="delete-group" data-value="${esc(target)}" style="margin-top:24px">Eliminar grupo</button>
+  `;
 }
 
 function renderBimesterItem(name, editState) {
@@ -1961,11 +2091,6 @@ function attachHandlers() {
     editBim.addEventListener('input', e => { state.bimesterEdit.draft = e.target.value; });
     setTimeout(() => { editBim.focus(); editBim.setSelectionRange(editBim.value.length, editBim.value.length); }, 50);
   }
-  const editGroup = $('edit-group-input');
-  if (editGroup) {
-    editGroup.addEventListener('input', e => { state.groupEdit.draft = e.target.value; });
-    setTimeout(() => { editGroup.focus(); editGroup.setSelectionRange(editGroup.value.length, editGroup.value.length); }, 50);
-  }
 }
 
 function onAction(e) {
@@ -1998,6 +2123,7 @@ function onSelectChange(e) {
 const ACTIONS = {
   back:               () => goBack(),
   'goto-home':        () => navigate('home'),
+  'goto-config-hub':  () => navigate('config-hub'),
   'finish-setup':     () => {
     if (!isSetupComplete()) { toast('Aún te falta configurar algo'); return; }
     navigate('home');
@@ -2171,21 +2297,27 @@ const ACTIONS = {
     render();
   },
 
-  'start-group-edit': (v) => {
-    state.groupEdit = { editingName: v, draft: v };
-    render();
+  'open-manage-group': (v) => {
+    state.manageGroupName = v;
+    showScreen('manage-group');
   },
-  'cancel-group-edit': () => {
-    state.groupEdit = { editingName: null, draft: '' };
-    render();
-  },
-  'save-group-edit': (v) => {
-    const next = (state.groupEdit.draft || '').trim();
+  'rename-group': (v) => {
+    const input = $('rename-group-input');
+    if (!input) return;
+    const next = input.value.trim();
     if (!next) { toast('No puede quedar vacío'); return; }
+    if (next === v) return;
     const ok = DB.updateGroup(v, next);
     if (!ok) { toast('Ese nombre ya existe'); return; }
-    state.groupEdit = { editingName: null, draft: '' };
+    state.manageGroupName = next;
     toast('Grupo actualizado');
+    render();
+  },
+  'toggle-student-in-group': (_, el) => {
+    const student = el.dataset.student;
+    const group = el.dataset.group;
+    const current = DB.getStudentGroup(student);
+    DB.setStudentGroup(student, current === group ? null : group);
     render();
   },
   'delete-group': (v) => {
@@ -2197,9 +2329,15 @@ const ACTIONS = {
       title: `¿Eliminar grupo "${v}"?`,
       text,
       onConfirm: () => {
+        const wasOnManage = state.screen === 'manage-group';
         DB.deleteGroup(v);
         toast('Grupo eliminado');
-        render();
+        if (wasOnManage) {
+          state.manageGroupName = null;
+          goBack();
+        } else {
+          render();
+        }
       }
     });
   },
