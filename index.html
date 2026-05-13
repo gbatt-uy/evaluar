@@ -80,6 +80,9 @@
   .topbar .back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-weight: 500; font-size: 15px; padding: 12px 12px 12px 6px; border-radius: 10px; min-height: 48px; }
   .topbar .back:active { background: var(--surface-alt); }
   .topbar .title { font-size: 14px; font-weight: 600; color: var(--text-soft); flex: 1; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-crumb { color: var(--text-mute); font-weight: 500; }
+  .topbar-crumb-sep { color: var(--text-mute); opacity: 0.5; margin: 0 5px; font-weight: 400; }
+  .topbar-title-current { color: var(--text-soft); font-weight: 600; }
   .topbar .spacer { min-width: 56px; display: inline-flex; justify-content: flex-end; align-items: center; }
   .topbar .topbar-right { display: inline-flex; justify-content: flex-end; align-items: center; gap: 4px; min-width: 56px; }
   .topbar-home { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; color: var(--text-soft); }
@@ -442,7 +445,6 @@
     position: fixed;
     bottom: 0;
     left: 50%;
-    transform: translateX(-50%);
     width: 100%;
     max-width: 520px;
     display: flex;
@@ -454,6 +456,15 @@
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     gap: 4px;
     z-index: 50;
+    transform: translate(-50%, 100%);
+    opacity: 0;
+    transition: transform .26s cubic-bezier(.4,0,.2,1), opacity .2s ease;
+    pointer-events: none;
+  }
+  .tab-bar.visible {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
   }
   .tab-bar-item {
     flex: 1;
@@ -954,8 +965,28 @@ const SCREENS = {
   'manage-group': renderManageGroup,
 };
 
-// Screens that show the bottom tab bar — top-level destinations
-const TAB_BAR_SCREENS = new Set(['home', 'config-hub']);
+// Screens that take over the full viewport. The tab bar hides on these
+// because they have their own self-contained navigation (next/prev student,
+// finish evaluation, setup wizard) and benefit from the extra vertical
+// breathing room. Every other screen keeps the tab bar visible.
+const IMMERSIVE_SCREENS = new Set(['setup-init', 'setup', 'evaluation']);
+
+// Which tab "owns" each screen — used to highlight the active tab while
+// the user is inside a child screen. Defaults to 'home' if unmapped.
+const SCREEN_TAB = {
+  home: 'home',
+  history: 'home',
+  'history-detail': 'home',
+  summary: 'home',
+  students: 'home',
+  'config-hub': 'config-hub',
+  'config-areas': 'config-hub',
+  'config-bimesters': 'config-hub',
+  'config-indicators': 'config-hub',
+  'config-groups': 'config-hub',
+  'config-students': 'config-hub',
+  'manage-group': 'config-hub',
+};
 
 function isSetupComplete() {
   return DB.getAreas().length > 0
@@ -996,8 +1027,11 @@ function navigate(name, payload) {
 
 function render() {
   const renderer = SCREENS[state.screen] || renderHome;
-  const showTabBar = TAB_BAR_SCREENS.has(state.screen);
-  $('app').innerHTML = `<div class="screen${showTabBar ? ' has-tab-bar' : ''}">${renderer()}</div>${showTabBar ? renderTabBar() : ''}${renderModal()}`;
+  const showTabBar = !IMMERSIVE_SCREENS.has(state.screen);
+  // Tab bar lives in the DOM permanently and slides via CSS so the
+  // transition between immersive and non-immersive feels smooth instead
+  // of an abrupt mount/unmount.
+  $('app').innerHTML = `<div class="screen${showTabBar ? ' has-tab-bar' : ''}">${renderer()}</div>${renderTabBar(showTabBar)}${renderModal()}`;
   attachHandlers();
 }
 
@@ -1009,15 +1043,16 @@ const ICONS = {
   settings: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.86l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05a1.7 1.7 0 0 0-1.86-.34 1.7 1.7 0 0 0-1.03 1.55V21a2 2 0 1 1-4 0v-.05A1.7 1.7 0 0 0 8.97 19.4a1.7 1.7 0 0 0-1.86.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.62 15 1.7 1.7 0 0 0 3.05 14H3a2 2 0 1 1 0-4h.05A1.7 1.7 0 0 0 4.62 9 1.7 1.7 0 0 0 4.28 7.14l-.05-.05A2 2 0 1 1 7.06 4.26l.05.05A1.7 1.7 0 0 0 8.97 4.65 1.7 1.7 0 0 0 10 3.05V3a2 2 0 1 1 4 0v.05A1.7 1.7 0 0 0 15.03 4.62a1.7 1.7 0 0 0 1.86-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.38 9 1.7 1.7 0 0 0 21 10h.05a2 2 0 1 1 0 4H21a1.7 1.7 0 0 0-1.6 1z"/></svg>',
 };
 
-function renderTabBar() {
+function renderTabBar(visible) {
   const tabs = [
     { id: 'home',       icon: ICONS.home,     label: 'Inicio' },
     { id: 'config-hub', icon: ICONS.settings, label: 'Config' },
   ];
+  const activeTab = SCREEN_TAB[state.screen] || 'home';
   return `
-    <nav class="tab-bar" role="navigation" aria-label="Navegación principal">
+    <nav class="tab-bar ${visible ? 'visible' : ''}" role="navigation" aria-label="Navegación principal" aria-hidden="${visible ? 'false' : 'true'}">
       ${tabs.map(t => `
-        <button class="tab-bar-item ${state.screen === t.id ? 'active' : ''}" data-action="goto-${t.id}" aria-current="${state.screen === t.id ? 'page' : 'false'}">
+        <button class="tab-bar-item ${activeTab === t.id ? 'active' : ''}" data-action="goto-${t.id}" aria-current="${activeTab === t.id ? 'page' : 'false'}" tabindex="${visible ? '0' : '-1'}">
           <span class="tab-icon">${t.icon}</span>
           <span>${esc(t.label)}</span>
         </button>
@@ -1049,19 +1084,27 @@ function showConfirm({ title, text = '', confirmLabel = 'Sí', cancelLabel = 'Ca
 /* ============================================================
  * UI — shared components
  * ============================================================ */
-function renderTopbar({ back = false, title = '', right = '' } = {}) {
-  // Don't double up: when the tab bar is visible it already exposes 'Inicio',
-  // and onboarding has its own escape hatch.
-  const showHomeBtn = !TAB_BAR_SCREENS.has(state.screen) && state.screen !== 'setup-init';
+function renderTopbar({ back = false, title = '', crumb = '', right = '' } = {}) {
+  // The persistent home icon only appears on immersive flows (evaluation,
+  // setup) where the tab bar is hidden. On every other screen the tab bar
+  // already exposes 'Inicio', so the icon would be a redundant control.
+  // setup-init runs before any 'Inicio' exists, so no icon there either.
+  const isImmersive = IMMERSIVE_SCREENS.has(state.screen);
+  const showHomeBtn = isImmersive && state.screen !== 'setup-init';
   const homeBtn = showHomeBtn
     ? `<button class="topbar-home" data-action="goto-home" aria-label="Inicio" title="Inicio">${ICONS.home}</button>`
+    : '';
+  const titleHtml = title
+    ? (crumb
+        ? `<span class="topbar-crumb">${esc(crumb)}</span><span class="topbar-crumb-sep" aria-hidden="true">›</span><span class="topbar-title-current">${esc(title)}</span>`
+        : esc(title))
     : '';
   return `
     <div class="topbar">
       ${back
         ? `<button class="back" data-action="back" aria-label="Volver"><span style="font-size:18px;line-height:1">←</span><span>Atrás</span></button>`
         : `<div class="spacer"></div>`}
-      <div class="title">${esc(title)}</div>
+      <div class="title">${titleHtml}</div>
       <div class="topbar-right">${right}${homeBtn}</div>
     </div>`;
 }
@@ -1446,7 +1489,8 @@ function renderSummaryView(ev, isHistory) {
   return `
     ${renderTopbar({
       back: isHistory,
-      title: isHistory ? 'Detalle' : 'Resumen'
+      title: isHistory ? 'Detalle' : 'Resumen',
+      crumb: isHistory ? 'Historial' : 'Evaluación'
     })}
     <div class="indicator-pill">${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
     <div class="h3" style="margin-bottom:4px">${esc(ev.indicador)}</div>
@@ -1551,6 +1595,7 @@ function renderHistory() {
     ${renderTopbar({
       back: true,
       title: 'Historial',
+      crumb: 'Inicio',
       right: `<button class="topbar-action" data-action="export-csv">CSV</button>`
     })}
     <div class="h2 mb-16">Evaluaciones</div>
@@ -1633,6 +1678,7 @@ function renderStudentsView() {
     ${renderTopbar({
       back: true,
       title: 'Alumnos',
+      crumb: 'Inicio',
       right: `<button class="topbar-action" data-action="config-students">Gestionar</button>`
     })}
     <div class="h2 mb-16">Desempeño</div>
@@ -1707,7 +1753,7 @@ function renderConfigStudents() {
   const groups = DB.getGroups();
   const hasGroups = groups.length > 0;
   return `
-    ${renderTopbar({ back: true, title: 'Alumnos' })}
+    ${renderTopbar({ back: true, title: 'Alumnos', crumb: 'Config' })}
     <div class="mb-20">
       <div class="h2">Gestionar alumnos</div>
       <p class="lead">${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'} en tu lista${hasGroups ? ` · ${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}` : ''}</p>
@@ -1766,7 +1812,7 @@ function renderConfigIndicators() {
   const areaDraft = editState.areaDraft || areas[0];
 
   return `
-    ${renderTopbar({ back: true, title: 'Indicadores' })}
+    ${renderTopbar({ back: true, title: 'Indicadores', crumb: 'Config' })}
     <div class="mb-20">
       <div class="h2">Indicadores</div>
       <p class="lead">Creá, editá o eliminá indicadores.</p>
@@ -1864,7 +1910,7 @@ function renderConfigAreas() {
   const editState = state.areaEdit;
 
   return `
-    ${renderTopbar({ back: true, title: 'Áreas' })}
+    ${renderTopbar({ back: true, title: 'Áreas', crumb: 'Config' })}
     <div class="mb-20">
       <div class="h2">Áreas</div>
       <p class="lead">Materias o áreas curriculares que evaluás.</p>
@@ -1914,7 +1960,7 @@ function renderConfigBimesters() {
   const editState = state.bimesterEdit;
 
   return `
-    ${renderTopbar({ back: true, title: 'Bimestres' })}
+    ${renderTopbar({ back: true, title: 'Bimestres', crumb: 'Config' })}
     <div class="mb-20">
       <div class="h2">Bimestres</div>
       <p class="lead">Períodos lectivos (bimestres, trimestres, etc.).</p>
@@ -1942,7 +1988,7 @@ function renderConfigGroups() {
   const data = DB._data;
 
   return `
-    ${renderTopbar({ back: true, title: 'Grupos' })}
+    ${renderTopbar({ back: true, title: 'Grupos', crumb: 'Config' })}
     <div class="mb-20">
       <div class="h2">Grupos</div>
       <p class="lead">Agrupá alumnos por clase, curso o división.</p>
@@ -1989,7 +2035,7 @@ function renderManageGroup() {
   const inGroup = students.filter(s => data.studentGroups[s] === target);
 
   return `
-    ${renderTopbar({ back: true, title: 'Grupo' })}
+    ${renderTopbar({ back: true, title: target, crumb: 'Grupos' })}
     <div class="mb-20">
       <div class="h2">${esc(target)}</div>
       <p class="lead">${inGroup.length} ${inGroup.length === 1 ? 'alumno asignado' : 'alumnos asignados'}</p>
