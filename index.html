@@ -198,25 +198,14 @@
   .val-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1.5px solid var(--border); min-height: 50px; text-align: left; transition: transform .08s ease, background .15s ease, border-color .15s ease; font-weight: 600; font-size: 15px; width: 100%; }
   .val-btn:active { transform: scale(0.985); }
   .val-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-  .val-btn[data-val="logrado"] .val-dot { background: var(--logrado); }
-  .val-btn[data-val="proceso"] .val-dot { background: var(--proceso); }
-  .val-btn[data-val="apoyo"] .val-dot { background: var(--apoyo); }
-  .val-btn[data-val="noeval"] .val-dot { background: var(--noeval); }
-  .val-btn.selected[data-val="logrado"] { background: var(--logrado); border-color: var(--logrado); color: white; }
-  .val-btn.selected[data-val="proceso"] { background: var(--proceso); border-color: var(--proceso); color: white; }
-  .val-btn.selected[data-val="apoyo"] { background: var(--apoyo); border-color: var(--apoyo); color: white; }
-  .val-btn.selected[data-val="noeval"] { background: var(--noeval); border-color: var(--noeval); color: white; }
-  .val-btn.selected .val-dot { background: white; }
+  .val-btn.selected { background: var(--val-color, var(--primary)); border-color: var(--val-color, var(--primary)); color: white; }
+  .val-btn.selected .val-dot { background: white !important; }
 
   /* Nota grid */
   .nota-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
-  .nota-btn { aspect-ratio: 1; border-radius: 50%; font-size: 20px; font-weight: 700; color: white; min-height: 56px; transition: transform .08s ease, box-shadow .15s ease, opacity .15s ease; opacity: 0.85; }
+  .nota-btn { aspect-ratio: 1; border-radius: 50%; font-size: 18px; font-weight: 700; color: white; min-height: 52px; transition: transform .08s ease, box-shadow .15s ease, opacity .15s ease; opacity: 0.85; }
   .nota-btn:active { transform: scale(0.94); }
-  .nota-btn.selected { opacity: 1; box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px currentColor; }
-  .nota-btn[data-color="green"] { background: var(--logrado); }
-  .nota-btn[data-color="amber"] { background: var(--proceso); }
-  .nota-btn[data-color="orange"] { background: var(--apoyo-mid); }
-  .nota-btn[data-color="red"] { background: var(--apoyo); }
+  .nota-btn.selected { opacity: 1; box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px var(--text); }
 
   /* Observación */
   .obs-section { margin-bottom: 12px; }
@@ -536,19 +525,113 @@ const DEFAULTS = {
   ACTIVITIES: []
 };
 
-const VALORACIONES = [
+// Legacy palette / map kept only as a fallback for evaluations created
+// before the customizable grading system existed. New code should always
+// read labels and colors from the evaluation's gradingSystem snapshot.
+const LEGACY_VALORACIONES = [
   { id: 'logrado',  label: 'Logrado',         color: '#10b981' },
   { id: 'proceso',  label: 'En proceso',      color: '#f59e0b' },
   { id: 'apoyo',    label: 'Necesita apoyo',  color: '#ef4444' },
   { id: 'noeval',   label: 'No evaluado',     color: '#9ca3af' },
 ];
-const VAL_MAP = Object.fromEntries(VALORACIONES.map(v => [v.id, v]));
+const LEGACY_VAL_MAP = Object.fromEntries(LEGACY_VALORACIONES.map(v => [v.id, v]));
+
+// Curated color palette for value swatches. Two of each hue so the user
+// can build gradients (e.g. 1..10 numeric) without going outside the
+// app's chromatic family.
+const GRADING_PALETTE = [
+  '#10b981', '#65a30d',
+  '#84cc16', '#eab308',
+  '#f59e0b', '#f97316',
+  '#ef4444', '#dc2626',
+  '#3b82f6', '#0ea5e9',
+  '#8b5cf6', '#a855f7',
+  '#6b7280', '#9ca3af',
+];
+
+// Built-in grading-system templates. Picking one in the config screen
+// overwrites the active system entirely; the user can then tweak it.
+const GRADING_TEMPLATES = [
+  {
+    id: 'desempeno',
+    name: 'Desempeño',
+    description: 'Logrado · En proceso · Necesita apoyo',
+    values: [
+      { id: 'logrado', label: 'Logrado',         color: '#10b981' },
+      { id: 'proceso', label: 'En proceso',      color: '#f59e0b' },
+      { id: 'apoyo',   label: 'Necesita apoyo',  color: '#ef4444' },
+      { id: 'noeval',  label: 'No evaluado',     color: '#9ca3af' },
+    ],
+  },
+  {
+    id: 'numerico-10',
+    name: 'Numérico 1-10',
+    description: 'Escala de 1 a 10 con gradiente de color',
+    values: [
+      { id: 'n1',  label: '1',  color: '#dc2626' },
+      { id: 'n2',  label: '2',  color: '#ef4444' },
+      { id: 'n3',  label: '3',  color: '#f97316' },
+      { id: 'n4',  label: '4',  color: '#f59e0b' },
+      { id: 'n5',  label: '5',  color: '#eab308' },
+      { id: 'n6',  label: '6',  color: '#84cc16' },
+      { id: 'n7',  label: '7',  color: '#65a30d' },
+      { id: 'n8',  label: '8',  color: '#10b981' },
+      { id: 'n9',  label: '9',  color: '#10b981' },
+      { id: 'n10', label: '10', color: '#065f46' },
+    ],
+  },
+  {
+    id: 'conceptual',
+    name: 'Conceptual A-D',
+    description: 'Cuatro niveles: A, B, C, D',
+    values: [
+      { id: 'a', label: 'A', color: '#10b981' },
+      { id: 'b', label: 'B', color: '#eab308' },
+      { id: 'c', label: 'C', color: '#f97316' },
+      { id: 'd', label: 'D', color: '#ef4444' },
+    ],
+  },
+  {
+    id: 'binario',
+    name: 'Aprobado / Desaprobado',
+    description: 'Dos opciones simples',
+    values: [
+      { id: 'ok',   label: 'Aprobado',     color: '#10b981' },
+      { id: 'fail', label: 'Desaprobado',  color: '#ef4444' },
+    ],
+  },
+];
+
+function cloneGradingTemplate(template) {
+  return {
+    name: template.name,
+    values: template.values.map(v => ({ ...v })),
+  };
+}
+
+// Find a value's label/color for display. New evaluations carry a
+// gradingSystem snapshot; legacy ones fall through to LEGACY_VAL_MAP.
+function lookupValue(ev, valorId) {
+  if (!valorId) return null;
+  if (ev && ev.gradingSystem && Array.isArray(ev.gradingSystem.values)) {
+    return ev.gradingSystem.values.find(v => v.id === valorId) || null;
+  }
+  return LEGACY_VAL_MAP[valorId] || null;
+}
 
 const EMPTY_FILTER = { student: '', actividadId: '', area: '', bimestre: '' };
 
-function countValoraciones(ev) {
-  const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
-  ev.records.forEach(r => { if (r.valoracion) counts[r.valoracion]++; });
+// Count how many records hit each value in the evaluation's grading
+// system. Works on legacy evals too — their gradingSystem snapshot was
+// backfilled to the Desempeño template on load.
+function countValues(ev) {
+  const values = (ev.gradingSystem && ev.gradingSystem.values) || LEGACY_VALORACIONES;
+  const counts = {};
+  values.forEach(v => { counts[v.id] = 0; });
+  ev.records.forEach(r => {
+    const id = r.valor != null ? r.valor : r.valoracion;
+    if (id != null && counts[id] != null) counts[id]++;
+  });
   return counts;
 }
 
@@ -599,18 +682,6 @@ function currentBimestreLabel(bimesters) {
   return bimesters[Math.min(idx, bimesters.length - 1)] || bimesters[0];
 }
 
-function notaToValoracion(n) {
-  if (n >= 9) return 'logrado';
-  if (n >= 5) return 'proceso';
-  return 'apoyo';
-}
-
-function notaToColor(n) {
-  if (n >= 9) return 'green';
-  if (n >= 7) return 'amber';
-  if (n >= 5) return 'orange';
-  return 'red';
-}
 
 function toast(msg, ms = 1800) {
   const el = $('toast');
@@ -658,6 +729,28 @@ const DB = {
     }
     if (!Array.isArray(data.groups)) data.groups = [];
     if (!data.studentGroups || typeof data.studentGroups !== 'object') data.studentGroups = {};
+
+    // Active grading system. Defaults to the 'Desempeño' template so
+    // first-run users see the same UI they would have seen before this
+    // feature existed.
+    if (!data.gradingSystem || !Array.isArray(data.gradingSystem.values) || data.gradingSystem.values.length === 0) {
+      data.gradingSystem = cloneGradingTemplate(GRADING_TEMPLATES[0]);
+    }
+
+    // Attach the active grading system as a snapshot to evaluations that
+    // pre-date this feature, and copy each record's legacy 'valoracion'
+    // into the new 'valor' field. We keep 'nota' on legacy records so
+    // their summaries keep showing the numeric note next to the label.
+    data.evaluations.forEach(ev => {
+      if (!ev.gradingSystem) {
+        ev.gradingSystem = cloneGradingTemplate(GRADING_TEMPLATES[0]);
+      }
+      ev.records.forEach(rec => {
+        if (rec.valoracion != null && rec.valor == null) rec.valor = rec.valoracion;
+        delete rec.valoracion;
+      });
+    });
+
     this._data = data;
     this._normalizeActivities();
     return data;
@@ -899,11 +992,71 @@ const DB = {
     return students.filter(s => data.studentGroups[s] === group);
   },
 
+  /* ---- Grading system ---- */
+  getGradingSystem() {
+    const data = this.load();
+    return data.gradingSystem;
+  },
+
+  setGradingSystemName(name) {
+    const data = this.load();
+    const v = (name || '').trim();
+    if (!v) return false;
+    data.gradingSystem.name = v;
+    this.save();
+    return true;
+  },
+
+  applyGradingTemplate(templateId) {
+    const tpl = GRADING_TEMPLATES.find(t => t.id === templateId);
+    if (!tpl) return false;
+    const data = this.load();
+    data.gradingSystem = cloneGradingTemplate(tpl);
+    this.save();
+    return true;
+  },
+
+  addGradingValue(label, color) {
+    const data = this.load();
+    const v = (label || '').trim();
+    if (!v) return false;
+    data.gradingSystem.values.push({
+      id: 'v_' + generateId(),
+      label: v,
+      color: color || GRADING_PALETTE[0],
+    });
+    this.save();
+    return true;
+  },
+
+  updateGradingValue(valueId, patch) {
+    const data = this.load();
+    const val = data.gradingSystem.values.find(v => v.id === valueId);
+    if (!val) return false;
+    if (patch.label != null) {
+      const t = patch.label.trim();
+      if (!t) return false;
+      val.label = t;
+    }
+    if (patch.color != null) val.color = patch.color;
+    this.save();
+    return true;
+  },
+
+  deleteGradingValue(valueId) {
+    const data = this.load();
+    if (data.gradingSystem.values.length <= 2) return false;
+    data.gradingSystem.values = data.gradingSystem.values.filter(v => v.id !== valueId);
+    this.save();
+    return true;
+  },
+
   /* ---- Evaluations ---- */
   getEvaluations() { return this.load().evaluations; },
   getEvaluation(id) { return this.getEvaluations().find(e => e.id === id) || null; },
 
   createEvaluation({ area, bimestre, actividadId, actividad, group = null, students }) {
+    const data = this.load();
     const evalu = {
       id: generateId(),
       date: new Date().toISOString(),
@@ -912,9 +1065,15 @@ const DB = {
       actividadId,
       actividad,
       group,
-      records: students.map(name => ({ alumno: name, valoracion: null, nota: null, observacion: '' }))
+      // Snapshot the active grading system so later edits to the system
+      // don't retroactively change the meaning of past evaluations.
+      gradingSystem: {
+        name: data.gradingSystem.name,
+        values: data.gradingSystem.values.map(v => ({ ...v })),
+      },
+      records: students.map(name => ({ alumno: name, valor: null, observacion: '' }))
     };
-    this.load().evaluations.unshift(evalu);
+    data.evaluations.unshift(evalu);
     this.save();
     return evalu;
   },
@@ -945,12 +1104,12 @@ const state = {
   setup: { area: null, actividadId: null, bimestre: null, group: null },
   currentEval: null,
   studentIdx: 0,
-  evalMode: 'valoracion',   // 'valoracion' | 'nota'
   filter: { ...EMPTY_FILTER },
   activityEdit: { editingId: null, adding: false, draft: '', areaDraft: null },
   areaEdit: { editingName: null, draft: '' },
   bimesterEdit: { editingName: null, draft: '' },
   manageGroupName: null,
+  gradingEdit: { editingValueId: null, adding: false, draftLabel: '', draftColor: '#10b981', showTemplates: false },
   studentsFilter: { group: '' },
   expandedStudent: null,
   modal: null,
@@ -974,6 +1133,7 @@ const SCREENS = {
   'config-areas': renderConfigAreas,
   'config-bimesters': renderConfigBimesters,
   'config-groups': renderConfigGroups,
+  'config-grading': renderConfigGrading,
   'manage-group': renderManageGroup,
 };
 
@@ -996,6 +1156,7 @@ const SCREEN_TAB = {
   'config-bimesters': 'config-hub',
   'config-activities': 'config-hub',
   'config-groups': 'config-hub',
+  'config-grading': 'config-hub',
   'config-students': 'config-hub',
   'manage-group': 'config-hub',
 };
@@ -1172,6 +1333,7 @@ function renderConfigHub() {
   const areas = DB.getAreas();
   const bimesters = DB.getBimesters();
   const groups = DB.getGroups();
+  const grading = DB.getGradingSystem();
   return `
     ${renderTopbar()}
     <div class="home-hero">
@@ -1206,6 +1368,13 @@ function renderConfigHub() {
           <div class="home-link-body">
             <div class="home-link-title">Grupos</div>
             <div class="home-link-meta">${groups.length === 0 ? 'Agrupá alumnos por clase' : `${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}`}</div>
+          </div>
+          <span class="arrow">›</span>
+        </button>
+        <button class="home-link" data-action="config-grading">
+          <div class="home-link-body">
+            <div class="home-link-title">Sistema de calificación</div>
+            <div class="home-link-meta">${esc(grading.name)} · ${grading.values.length} ${grading.values.length === 1 ? 'valor' : 'valores'}</div>
           </div>
           <span class="arrow">›</span>
         </button>
@@ -1400,10 +1569,10 @@ function renderEvaluation() {
   const idx = state.studentIdx;
   const rec = ev.records[idx];
   const total = ev.records.length;
-  const completed = ev.records.filter(r => r.valoracion).length;
+  const completed = ev.records.filter(r => r.valor).length;
   const progress = Math.round((completed / total) * 100);
   const obsOpen = !!(rec.observacion && rec.observacion.length);
-  const mode = state.evalMode;
+  const values = (ev.gradingSystem && ev.gradingSystem.values) || [];
 
   return `
     ${renderTopbar({
@@ -1423,15 +1592,10 @@ function renderEvaluation() {
     <div class="student-card">
       <div class="activity-pill">${esc(ev.actividad || 'Sin actividad')}</div>
       <div class="student-name">${esc(rec.alumno)}</div>
-      <div class="student-meta">${renderRecordMeta(rec)}</div>
+      <div class="student-meta">${renderRecordMeta(ev, rec)}</div>
     </div>
 
-    <div class="mode-toggle" role="tablist">
-      <button class="${mode === 'valoracion' ? 'active' : ''}" data-action="set-mode" data-value="valoracion">Valoración</button>
-      <button class="${mode === 'nota' ? 'active' : ''}" data-action="set-mode" data-value="nota">Nota</button>
-    </div>
-
-    ${mode === 'valoracion' ? renderValoracionPicker(rec) : renderNotaPicker(rec)}
+    ${renderValuePicker(ev, rec)}
 
     <div class="obs-section">
       <button class="obs-toggle ${obsOpen ? 'open has-content' : ''}" data-action="toggle-obs">
@@ -1452,30 +1616,33 @@ function renderEvaluation() {
   `;
 }
 
-function renderRecordMeta(rec) {
-  if (rec.nota != null) return `Nota: ${rec.nota}`;
-  if (rec.valoracion) return esc(VAL_MAP[rec.valoracion].label);
+function renderRecordMeta(ev, rec) {
+  const v = lookupValue(ev, rec.valor);
+  if (v) return esc(v.label) + (rec.nota != null ? ` · Nota ${rec.nota}` : '');
   return 'Sin evaluar';
 }
 
-function renderValoracionPicker(rec) {
+// Picker auto-switches to a grid when labels are short (single character or
+// digit) so '1..10' fits compactly and 'A B C D' stays readable. Longer
+// labels (Logrado, En proceso, ...) get the vertical button list.
+function renderValuePicker(ev, rec) {
+  const values = (ev.gradingSystem && ev.gradingSystem.values) || [];
+  const useGrid = values.every(v => (v.label || '').length <= 3) && values.length >= 5;
+  if (useGrid) {
+    return `
+      <div class="nota-grid">
+        ${values.map(v => `
+          <button class="nota-btn ${rec.valor === v.id ? 'selected' : ''}" data-action="set-valor" data-value="${esc(v.id)}" style="background:${esc(v.color)}">${esc(v.label)}</button>
+        `).join('')}
+      </div>`;
+  }
   return `
     <div class="val-group">
-      ${VALORACIONES.map(v => `
-        <button class="val-btn ${rec.valoracion === v.id && rec.nota == null ? 'selected' : ''}" data-action="set-val" data-value="${v.id}" data-val="${v.id}">
-          <span class="val-dot"></span>
+      ${values.map(v => `
+        <button class="val-btn ${rec.valor === v.id ? 'selected' : ''}" data-action="set-valor" data-value="${esc(v.id)}" style="--val-color:${esc(v.color)}">
+          <span class="val-dot" style="background:${esc(v.color)}"></span>
           <span>${esc(v.label)}</span>
         </button>`).join('')}
-    </div>`;
-}
-
-function renderNotaPicker(rec) {
-  const notas = [1,2,3,4,5,6,7,8,9,10];
-  return `
-    <div class="nota-grid">
-      ${notas.map(n => `
-        <button class="nota-btn ${rec.nota === n ? 'selected' : ''}" data-action="set-nota" data-value="${n}" data-color="${notaToColor(n)}">${n}</button>
-      `).join('')}
     </div>`;
 }
 
@@ -1493,9 +1660,10 @@ function renderHistoryDetail() {
 function renderSummaryView(ev, isHistory) {
   if (!ev) { navigate('home'); return ''; }
   const total = ev.records.length;
-  const completed = ev.records.filter(r => r.valoracion).length;
+  const completed = ev.records.filter(r => (r.valor != null) || (r.valoracion != null)).length;
   const pending = total - completed;
-  const counts = countValoraciones(ev);
+  const counts = countValues(ev);
+  const values = (ev.gradingSystem && ev.gradingSystem.values) || LEGACY_VALORACIONES;
   const observations = ev.records.filter(r => r.observacion && r.observacion.trim());
 
   return `
@@ -1521,17 +1689,17 @@ function renderSummaryView(ev, isHistory) {
 
     <div class="distribution">
       <h3 class="h3">Distribución</h3>
-      ${VALORACIONES.map(v => {
-        const c = counts[v.id];
+      ${values.map(v => {
+        const c = counts[v.id] || 0;
         const pct = total > 0 ? (c / total) * 100 : 0;
         const pctLabel = total > 0 ? Math.round(pct) : 0;
         return `
           <div class="dist-row">
             <div class="dist-label">
-              <span class="val-dot" style="background:${v.color}"></span>
+              <span class="val-dot" style="background:${esc(v.color)}"></span>
               <span>${esc(v.label)}</span>
             </div>
-            <div class="dist-bar-track"><div class="dist-bar-fill ${v.id}" style="width:${pct}%"></div></div>
+            <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${pct}%;background:${esc(v.color)}"></div></div>
             <div class="dist-count">${c} <span class="dist-pct">(${pctLabel}%)</span></div>
           </div>`;
       }).join('')}
@@ -1543,11 +1711,12 @@ function renderSummaryView(ev, isHistory) {
       <h3 class="h3" style="margin-bottom:10px;margin-top:20px">Observaciones</h3>
       <div class="obs-list">
         ${observations.map(r => {
-          const v = r.valoracion ? VAL_MAP[r.valoracion] : null;
+          const valId = r.valor != null ? r.valor : r.valoracion;
+          const v = lookupValue(ev, valId);
           return `
             <div class="obs-item">
               <div class="obs-item-head">
-                ${v ? `<span class="val-dot" style="background:${v.color}"></span>` : ''}
+                ${v ? `<span class="val-dot" style="background:${esc(v.color)}"></span>` : ''}
                 <span class="obs-item-name">${esc(r.alumno)}</span>
                 ${r.nota != null ? `<span class="muted" style="font-size:12px">· Nota ${r.nota}</span>` : ''}
               </div>
@@ -1571,14 +1740,15 @@ function renderStudentBreakdown(ev) {
     <h3 class="h3" style="margin-bottom:10px;margin-top:4px">Por alumno</h3>
     <div class="obs-list">
       ${sorted.map(r => {
-        const v = r.valoracion ? VAL_MAP[r.valoracion] : null;
+        const valId = r.valor != null ? r.valor : r.valoracion;
+        const v = lookupValue(ev, valId);
         return `
           <div class="obs-item">
             <div class="obs-item-head">
-              ${v ? `<span class="val-dot" style="background:${v.color}"></span>` : `<span class="val-dot" style="background:var(--noeval);opacity:.3"></span>`}
+              ${v ? `<span class="val-dot" style="background:${esc(v.color)}"></span>` : `<span class="val-dot" style="background:var(--noeval);opacity:.3"></span>`}
               <span class="obs-item-name">${esc(r.alumno)}</span>
               <span class="muted" style="font-size:12px;margin-left:auto">
-                ${r.nota != null ? `Nota ${r.nota}` : (v ? esc(v.label) : 'Sin evaluar')}
+                ${v ? esc(v.label) : 'Sin evaluar'}${r.nota != null ? ` · Nota ${r.nota}` : ''}
               </span>
             </div>
           </div>`;
@@ -1599,7 +1769,7 @@ function renderHistory() {
 
   const filtered = all.filter(ev => {
     if (!matchesEval(ev, f)) return false;
-    if (f.student && !ev.records.some(r => r.alumno === f.student && r.valoracion)) return false;
+    if (f.student && !ev.records.some(r => r.alumno === f.student && (r.valor != null || r.valoracion != null))) return false;
     return true;
   });
 
@@ -1645,15 +1815,16 @@ function renderHistory() {
 }
 
 function renderHistoryItem(ev) {
-  const counts = countValoraciones(ev);
-  const completed = ev.records.filter(r => r.valoracion).length;
+  const counts = countValues(ev);
+  const completed = ev.records.filter(r => r.valor != null || r.valoracion != null).length;
+  const values = (ev.gradingSystem && ev.gradingSystem.values) || LEGACY_VALORACIONES;
   return `
     <button class="history-item" data-action="open-eval" data-id="${esc(ev.id)}">
       <div class="history-date">${formatDate(ev.date)} · ${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
       <div class="history-activity">${esc(ev.actividad)}</div>
       <div class="history-stats">
         <span class="history-stat" style="color:var(--text-mute)">${completed}/${ev.records.length}</span>
-        ${VALORACIONES.map(v => counts[v.id] > 0 ? `<span class="history-stat"><span class="val-dot" style="background:${v.color}"></span>${counts[v.id]}</span>` : '').join('')}
+        ${values.map(v => (counts[v.id] || 0) > 0 ? `<span class="history-stat"><span class="val-dot" style="background:${esc(v.color)}"></span>${counts[v.id]}</span>` : '').join('')}
       </div>
     </button>`;
 }
@@ -1681,7 +1852,18 @@ function renderStudentsView() {
     const arr = evalsByActivity[indId] || [];
     for (const ev of arr) {
       const rec = ev.records.find(r => r.alumno === student);
-      if (rec && rec.valoracion) return { val: rec.valoracion, nota: rec.nota, date: ev.date, obs: rec.observacion };
+      const valId = rec ? (rec.valor != null ? rec.valor : rec.valoracion) : null;
+      if (valId != null) {
+        const v = lookupValue(ev, valId);
+        return {
+          valId,
+          label: v ? v.label : '',
+          color: v ? v.color : '#9ca3af',
+          nota: rec.nota,
+          date: ev.date,
+          obs: rec.observacion,
+        };
+      }
     }
     return null;
   }
@@ -1704,11 +1886,7 @@ function renderStudentsView() {
       </div>
     ` : ''}
 
-    <div class="legend">
-      <span class="legend-item"><span class="dot logrado"></span>Logrado</span>
-      <span class="legend-item"><span class="dot proceso"></span>En proceso</span>
-      <span class="legend-item"><span class="dot apoyo"></span>Necesita apoyo</span>
-    </div>
+    <p class="muted" style="font-size:12px;margin-bottom:14px">Cada punto refleja el último valor registrado para esa actividad.</p>
 
     ${students.length === 0
       ? renderEmpty('👤', filterGroup ? `Sin alumnos en "${filterGroup}"` : 'Sin alumnos', filterGroup ? 'Asigná alumnos a este grupo o elegí otro.' : 'Cargá alumnos desde Configurar.')
@@ -1735,7 +1913,7 @@ function renderStudentRow(student, activities, latestForStudent) {
         ${withData.length === 0
           ? `<div class="student-row-empty">Sin evaluaciones aún</div>`
           : `<div class="dot-row">
-              ${withData.map(c => `<span class="dot ${c.last.val}" title="${esc(c.ind.text)} — ${esc(VAL_MAP[c.last.val].label)}"></span>`).join('')}
+              ${withData.map(c => `<span class="dot" style="background:${esc(c.last.color)}" title="${esc(c.ind.text)} — ${esc(c.last.label)}"></span>`).join('')}
             </div>`}
       </button>
       ${expanded ? `
@@ -1744,11 +1922,11 @@ function renderStudentRow(student, activities, latestForStudent) {
             ? `<div class="muted" style="padding:10px 0;font-size:13px">Sin evaluaciones registradas.</div>`
             : withData.map(c => `
                 <div class="student-detail-row">
-                  <span class="val-dot ${c.last.val}"></span>
+                  <span class="val-dot" style="background:${esc(c.last.color)}"></span>
                   <div class="student-detail-body">
                     <div class="student-detail-ind">${esc(c.ind.text)}</div>
                     <div class="student-detail-meta">
-                      ${esc(VAL_MAP[c.last.val].label)}${c.last.nota != null ? ` · Nota ${c.last.nota}` : ''} · ${formatDateShort(c.last.date)}
+                      ${esc(c.last.label)}${c.last.nota != null ? ` · Nota ${c.last.nota}` : ''} · ${formatDateShort(c.last.date)}
                     </div>
                     ${c.last.obs && c.last.obs.trim() ? `<div class="student-detail-obs">${esc(c.last.obs)}</div>` : ''}
                   </div>
@@ -1992,6 +2170,127 @@ function renderConfigBimesters() {
 }
 
 /* ============================================================
+ * UI — Config: Grading system (custom values + templates)
+ * ============================================================ */
+function renderConfigGrading() {
+  const g = DB.getGradingSystem();
+  const editingId = state.gradingEdit.editingValueId;
+  const addingValue = state.gradingEdit.adding;
+  const showTemplates = state.gradingEdit.showTemplates;
+
+  return `
+    ${renderTopbar({ back: true, title: 'Calificación', crumb: 'Config' })}
+    <div class="mb-20">
+      <div class="h2">Sistema de calificación</div>
+      <p class="lead">Definí los valores que vas a usar al evaluar.</p>
+    </div>
+
+    <div class="card mb-16">
+      <div class="section-label">Nombre del sistema</div>
+      <div class="row" style="margin-top:8px">
+        <input class="input" id="grading-name-input" value="${esc(g.name)}" autocomplete="off">
+        <button class="btn btn-primary" data-action="save-grading-name" style="flex:0 0 auto;width:auto;padding:0 18px">Guardar</button>
+      </div>
+    </div>
+
+    <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Valores</span>
+      <button class="topbar-action" data-action="toggle-grading-templates" style="font-size:12px;text-transform:none;letter-spacing:0;color:var(--accent-2)">
+        ${showTemplates ? 'Ocultar' : 'Usar template'}
+      </button>
+    </div>
+
+    ${showTemplates ? renderGradingTemplates() : ''}
+
+    <div class="stack-tight">
+      ${g.values.map(v => renderGradingValueItem(v, editingId === v.id)).join('')}
+    </div>
+
+    ${addingValue
+      ? renderGradingValueAddCard()
+      : `<button class="add-btn-inline" data-action="grading-start-add">
+          <span class="plus">+</span>
+          <span>Agregar valor</span>
+        </button>`}
+
+    <p class="muted" style="font-size:12px;margin-top:14px;line-height:1.5">
+      Los cambios aplican a las próximas evaluaciones. Las anteriores conservan los valores que tenían.
+    </p>
+  `;
+}
+
+function renderGradingTemplates() {
+  return `
+    <div class="card mb-16" style="background:var(--accent-2-soft);border-color:rgba(139,92,246,0.3)">
+      <div class="section-label" style="color:var(--accent-2)">Templates</div>
+      <p class="muted" style="font-size:12px;margin-bottom:10px">Aplicar reemplaza el sistema actual.</p>
+      <div class="stack-tight">
+        ${GRADING_TEMPLATES.map(t => `
+          <button class="manage-item manage-item-clickable" data-action="apply-grading-template" data-value="${esc(t.id)}" style="background:var(--surface)">
+            <div class="manage-text" style="text-align:left">
+              ${esc(t.name)}
+              <div class="muted" style="font-size:12px;margin-top:2px">${esc(t.description)}</div>
+              <div style="display:flex;gap:4px;margin-top:6px">
+                ${t.values.slice(0, 10).map(v => `<span style="width:14px;height:14px;border-radius:50%;background:${esc(v.color)}"></span>`).join('')}
+              </div>
+            </div>
+            <span class="arrow" style="color:var(--text-mute);font-size:18px;margin-left:auto">›</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+function renderGradingValueItem(v, editing) {
+  if (editing) {
+    return `
+      <div class="manage-item">
+        <div class="manage-edit">
+          <input class="input" id="grading-value-input" value="${esc(state.gradingEdit.draftLabel)}" autocomplete="off" placeholder="Etiqueta">
+          ${renderColorPalette(state.gradingEdit.draftColor, 'grading-pick-color')}
+          <div class="manage-edit-actions">
+            <button class="btn btn-secondary" data-action="grading-cancel-edit">Cancelar</button>
+            <button class="btn btn-primary" data-action="grading-save-edit" data-value="${esc(v.id)}">Guardar</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="manage-item" style="align-items:center">
+      <span class="val-dot" style="background:${esc(v.color)};width:18px;height:18px;border-radius:50%;flex-shrink:0"></span>
+      <div class="manage-text">${esc(v.label)}</div>
+      <div class="manage-actions">
+        <button class="icon-btn" data-action="grading-start-edit" data-value="${esc(v.id)}" aria-label="Editar">✎</button>
+        <button class="icon-btn danger" data-action="grading-delete-value" data-value="${esc(v.id)}" aria-label="Eliminar">×</button>
+      </div>
+    </div>`;
+}
+
+function renderGradingValueAddCard() {
+  return `
+    <div class="add-card">
+      <div class="section-label">Nuevo valor</div>
+      <input class="input" id="grading-new-label" value="${esc(state.gradingEdit.draftLabel)}" autocomplete="off" placeholder="Ej: Excelente">
+      ${renderColorPalette(state.gradingEdit.draftColor, 'grading-pick-color')}
+      <div class="manage-edit-actions">
+        <button class="btn btn-secondary" data-action="grading-cancel-add">Cancelar</button>
+        <button class="btn btn-primary" data-action="grading-save-add">Guardar</button>
+      </div>
+    </div>`;
+}
+
+function renderColorPalette(selectedColor, actionName) {
+  return `
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px">
+      ${GRADING_PALETTE.map(c => `
+        <button data-action="${actionName}" data-value="${esc(c)}"
+          aria-label="Color ${esc(c)}"
+          style="width:32px;height:32px;border-radius:50%;background:${esc(c)};border:3px solid ${selectedColor === c ? 'var(--text)' : 'transparent'};cursor:pointer;flex-shrink:0;transition:transform .1s ease"></button>
+      `).join('')}
+    </div>`;
+}
+
+/* ============================================================
  * UI — Config: Groups (classes)
  * ============================================================ */
 function renderConfigGroups() {
@@ -2160,6 +2459,18 @@ function attachHandlers() {
     editBim.addEventListener('input', e => { state.bimesterEdit.draft = e.target.value; });
     setTimeout(() => { editBim.focus(); editBim.setSelectionRange(editBim.value.length, editBim.value.length); }, 50);
   }
+  // Keep grading-value drafts in sync so picking a color or saving doesn't
+  // wipe what the user just typed.
+  const gradingValueInput = $('grading-value-input');
+  if (gradingValueInput) {
+    gradingValueInput.addEventListener('input', e => { state.gradingEdit.draftLabel = e.target.value; });
+    setTimeout(() => { gradingValueInput.focus(); gradingValueInput.setSelectionRange(gradingValueInput.value.length, gradingValueInput.value.length); }, 50);
+  }
+  const gradingNewLabel = $('grading-new-label');
+  if (gradingNewLabel) {
+    gradingNewLabel.addEventListener('input', e => { state.gradingEdit.draftLabel = e.target.value; });
+    setTimeout(() => gradingNewLabel.focus(), 50);
+  }
 }
 
 function onAction(e) {
@@ -2232,6 +2543,10 @@ const ACTIONS = {
   'config-areas':       () => showScreen('config-areas'),
   'config-bimesters':   () => showScreen('config-bimesters'),
   'config-groups':      () => showScreen('config-groups'),
+  'config-grading':     () => {
+    state.gradingEdit = { editingValueId: null, adding: false, draftLabel: '', draftColor: GRADING_PALETTE[0], showTemplates: false };
+    showScreen('config-grading');
+  },
 
   'set-area':       (v) => {
     if (state.setup.area !== v) state.setup.actividadId = null;
@@ -2243,9 +2558,7 @@ const ACTIONS = {
   'set-group':      (v) => { state.setup.group = (v === '__all__' ? null : v); render(); },
   'start-eval':     () => startEvaluation(),
 
-  'set-mode':  (v) => { state.evalMode = v; render(); },
-  'set-val':   (v) => setValoracion(v),
-  'set-nota':  (v) => setNota(parseInt(v, 10)),
+  'set-valor': (v) => setValor(v),
 
   'prev-student': () => {
     if (state.studentIdx > 0) { state.studentIdx--; render(); }
@@ -2497,6 +2810,92 @@ const ACTIONS = {
     });
   },
 
+  'save-grading-name': () => {
+    const input = $('grading-name-input');
+    if (!input) return;
+    const ok = DB.setGradingSystemName(input.value);
+    if (!ok) { toast('No puede quedar vacío'); return; }
+    toast('Nombre actualizado');
+    render();
+  },
+  'toggle-grading-templates': () => {
+    state.gradingEdit.showTemplates = !state.gradingEdit.showTemplates;
+    render();
+  },
+  'apply-grading-template': (v) => {
+    const tpl = GRADING_TEMPLATES.find(t => t.id === v);
+    if (!tpl) return;
+    showConfirm({
+      title: `¿Aplicar template "${tpl.name}"?`,
+      text: 'Se reemplazan los valores actuales. Las evaluaciones anteriores no se modifican.',
+      confirmLabel: 'Aplicar',
+      danger: false,
+      onConfirm: () => {
+        DB.applyGradingTemplate(v);
+        state.gradingEdit = { editingValueId: null, adding: false, draftLabel: '', draftColor: GRADING_PALETTE[0], showTemplates: false };
+        toast('Template aplicado');
+        render();
+      }
+    });
+  },
+  'grading-start-add': () => {
+    state.gradingEdit = { editingValueId: null, adding: true, draftLabel: '', draftColor: GRADING_PALETTE[0], showTemplates: state.gradingEdit.showTemplates };
+    render();
+  },
+  'grading-cancel-add': () => {
+    state.gradingEdit = { editingValueId: null, adding: false, draftLabel: '', draftColor: GRADING_PALETTE[0], showTemplates: state.gradingEdit.showTemplates };
+    render();
+  },
+  'grading-save-add': () => {
+    const input = $('grading-new-label');
+    const label = input ? input.value.trim() : state.gradingEdit.draftLabel.trim();
+    if (!label) { toast('Escribí una etiqueta'); return; }
+    DB.addGradingValue(label, state.gradingEdit.draftColor);
+    state.gradingEdit = { editingValueId: null, adding: false, draftLabel: '', draftColor: GRADING_PALETTE[0], showTemplates: state.gradingEdit.showTemplates };
+    toast('Valor agregado');
+    render();
+  },
+  'grading-start-edit': (v) => {
+    const val = DB.getGradingSystem().values.find(x => x.id === v);
+    if (!val) return;
+    state.gradingEdit = { editingValueId: v, adding: false, draftLabel: val.label, draftColor: val.color, showTemplates: false };
+    render();
+  },
+  'grading-cancel-edit': () => {
+    state.gradingEdit = { editingValueId: null, adding: false, draftLabel: '', draftColor: GRADING_PALETTE[0], showTemplates: state.gradingEdit.showTemplates };
+    render();
+  },
+  'grading-save-edit': (v) => {
+    const input = $('grading-value-input');
+    const label = input ? input.value.trim() : state.gradingEdit.draftLabel.trim();
+    if (!label) { toast('No puede quedar vacío'); return; }
+    DB.updateGradingValue(v, { label, color: state.gradingEdit.draftColor });
+    state.gradingEdit = { editingValueId: null, adding: false, draftLabel: '', draftColor: GRADING_PALETTE[0], showTemplates: state.gradingEdit.showTemplates };
+    toast('Valor actualizado');
+    render();
+  },
+  'grading-delete-value': (v) => {
+    const sys = DB.getGradingSystem();
+    if (sys.values.length <= 2) { toast('Tiene que quedar al menos 2 valores'); return; }
+    const val = sys.values.find(x => x.id === v);
+    showConfirm({
+      title: `¿Eliminar "${val ? val.label : 'este valor'}"?`,
+      text: 'Las evaluaciones anteriores siguen mostrando este valor; solo desaparece de futuras evaluaciones.',
+      onConfirm: () => {
+        DB.deleteGradingValue(v);
+        toast('Valor eliminado');
+        render();
+      }
+    });
+  },
+  'grading-pick-color': (v) => {
+    state.gradingEdit.draftColor = v;
+    // Preserve draft from input before re-render
+    const labelInput = $('grading-value-input') || $('grading-new-label');
+    if (labelInput) state.gradingEdit.draftLabel = labelInput.value;
+    render();
+  },
+
   'export-csv': () => exportCSV(),
 
   'modal-cancel': () => { state.modal = null; render(); },
@@ -2554,28 +2953,16 @@ function startEvaluation() {
   });
   state.currentEval = ev;
   state.studentIdx = 0;
-  state.evalMode = 'valoracion';
   showScreen('evaluation');
 }
 
-function setValoracion(val) {
+function setValor(valorId) {
   const ev = state.currentEval;
   const rec = ev.records[state.studentIdx];
-  rec.valoracion = val;
-  rec.nota = null;
-  DB.updateRecord(ev.id, rec.alumno, { valoracion: val, nota: null });
-  toast(`Guardado: ${VAL_MAP[val].label}`);
-  render();
-}
-
-function setNota(n) {
-  if (isNaN(n) || n < 1 || n > 10) return;
-  const ev = state.currentEval;
-  const rec = ev.records[state.studentIdx];
-  rec.nota = n;
-  rec.valoracion = notaToValoracion(n);
-  DB.updateRecord(ev.id, rec.alumno, { nota: n, valoracion: rec.valoracion });
-  toast(`Nota: ${n}`);
+  rec.valor = valorId;
+  DB.updateRecord(ev.id, rec.alumno, { valor: valorId });
+  const v = lookupValue(ev, valorId);
+  toast(v ? `Guardado: ${v.label}` : 'Guardado');
   render();
 }
 
@@ -2710,15 +3097,18 @@ function exportCSV() {
   const rows = [];
   filtered.forEach(ev => {
     ev.records.forEach(rec => {
-      if (!rec.valoracion) return;
+      const valId = rec.valor != null ? rec.valor : rec.valoracion;
+      if (valId == null) return;
       if (f.student && rec.alumno !== f.student) return;
+      const v = lookupValue(ev, valId);
       rows.push([
         rec.alumno,
         DB.getStudentGroup(rec.alumno) || ev.group || '',
         ev.area || '',
         ev.actividad || '',
         ev.bimestre || '',
-        VAL_MAP[rec.valoracion]?.label || rec.valoracion,
+        (ev.gradingSystem && ev.gradingSystem.name) || '',
+        v ? v.label : valId,
         rec.nota != null ? rec.nota : '',
         rec.observacion || '',
         formatDate(ev.date)
@@ -2729,7 +3119,7 @@ function exportCSV() {
   if (rows.length === 0) { toast('Sin datos para exportar'); return; }
 
   rows.sort((a, b) => a[0].localeCompare(b[0], 'es'));
-  const header = ['Alumno','Grupo','Área','Actividad','Bimestre','Valoración','Nota','Observación','Fecha'];
+  const header = ['Alumno','Grupo','Área','Actividad','Bimestre','Sistema','Valor','Nota','Observación','Fecha'];
   const csv = '﻿' + [header, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
