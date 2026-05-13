@@ -76,11 +76,14 @@
   .screen { display: flex; flex-direction: column; flex: 1; padding: 20px 20px 32px; animation: fadeIn .22s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-  .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 48px; margin-bottom: 16px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 48px; margin-bottom: 16px; gap: 8px; }
   .topbar .back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-weight: 500; font-size: 15px; padding: 12px 12px 12px 6px; border-radius: 10px; min-height: 48px; }
   .topbar .back:active { background: var(--surface-alt); }
-  .topbar .title { font-size: 14px; font-weight: 600; color: var(--text-soft); }
-  .topbar .spacer { min-width: 56px; display: inline-flex; justify-content: flex-end; }
+  .topbar .title { font-size: 14px; font-weight: 600; color: var(--text-soft); flex: 1; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .spacer { min-width: 56px; display: inline-flex; justify-content: flex-end; align-items: center; }
+  .topbar .topbar-right { display: inline-flex; justify-content: flex-end; align-items: center; gap: 4px; min-width: 56px; }
+  .topbar-home { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; color: var(--text-soft); font-size: 20px; line-height: 1; }
+  .topbar-home:active { background: var(--surface-alt); }
 
   /* ============================================================
    * TYPOGRAPHY
@@ -171,22 +174,23 @@
   /* ============================================================
    * EVALUATION
    * ============================================================ */
-  .progress-wrap { padding: 4px 0 14px; }
-  .progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--text-soft); font-weight: 500; }
+  .progress-wrap { padding: 2px 0 10px; }
+  .progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px; color: var(--text-soft); font-weight: 500; }
   .progress-bar { height: 6px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; }
   .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%); border-radius: 3px; transition: width .3s ease; }
 
-  .student-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; }
-  .student-name { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
-  .student-meta { font-size: 13px; color: var(--text-mute); margin-top: 6px; font-weight: 500; }
+  .student-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; margin-bottom: 12px; }
+  .student-card .indicator-pill { margin-bottom: 6px; padding: 3px 10px; font-size: 11px; }
+  .student-name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  .student-meta { font-size: 12px; color: var(--text-mute); margin-top: 2px; font-weight: 500; }
 
-  .mode-toggle { display: flex; background: var(--surface-alt); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
-  .mode-toggle button { flex: 1; padding: 12px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--text-soft); transition: background .15s ease, color .15s ease; min-height: 48px; }
+  .mode-toggle { display: flex; background: var(--surface-alt); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+  .mode-toggle button { flex: 1; padding: 10px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--text-soft); transition: background .15s ease, color .15s ease; min-height: 44px; }
   .mode-toggle button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
 
   /* Valoración buttons */
-  .val-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-  .val-btn { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 12px; background: var(--surface); border: 1.5px solid var(--border); min-height: 56px; text-align: left; transition: transform .08s ease, background .15s ease, border-color .15s ease; font-weight: 600; font-size: 16px; width: 100%; }
+  .val-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .val-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: var(--surface); border: 1.5px solid var(--border); min-height: 50px; text-align: left; transition: transform .08s ease, background .15s ease, border-color .15s ease; font-weight: 600; font-size: 15px; width: 100%; }
   .val-btn:active { transform: scale(0.985); }
   .val-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
   .val-btn[data-val="logrado"] .val-dot { background: var(--logrado); }
@@ -210,8 +214,8 @@
   .nota-btn[data-color="red"] { background: var(--apoyo); }
 
   /* Observación */
-  .obs-section { margin-bottom: 16px; }
-  .obs-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; font-weight: 500; color: var(--text-soft); font-size: 14px; min-height: 48px; }
+  .obs-section { margin-bottom: 12px; }
+  .obs-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; font-weight: 500; color: var(--text-soft); font-size: 13px; min-height: 42px; }
   .obs-toggle:active { background: var(--surface-alt); }
   .obs-toggle.has-content { color: var(--text); }
   .obs-toggle .chev { transition: transform .2s ease; font-size: 11px; color: var(--text-mute); }
@@ -820,7 +824,15 @@ function isSetupComplete() {
 }
 
 function showScreen(name, payload) {
-  state.backStack.push(state.screen);
+  // If the target is already in the back stack, treat this as a return:
+  // truncate the stack at that point so the user lands at a predictable
+  // ancestor rather than bouncing between two screens.
+  const existingIdx = state.backStack.indexOf(name);
+  if (existingIdx >= 0) {
+    state.backStack = state.backStack.slice(0, existingIdx);
+  } else if (state.backStack[state.backStack.length - 1] !== state.screen) {
+    state.backStack.push(state.screen);
+  }
   state.screen = name;
   if (payload) Object.assign(state, payload);
   render();
@@ -872,13 +884,17 @@ function showConfirm({ title, text = '', confirmLabel = 'Sí', cancelLabel = 'Ca
  * UI — shared components
  * ============================================================ */
 function renderTopbar({ back = false, title = '', right = '' } = {}) {
+  const onHomeLike = state.screen === 'home' || state.screen === 'setup-init';
+  const homeBtn = !onHomeLike
+    ? `<button class="topbar-home" data-action="goto-home" aria-label="Inicio" title="Inicio">⌂</button>`
+    : '';
   return `
     <div class="topbar">
       ${back
         ? `<button class="back" data-action="back" aria-label="Volver"><span style="font-size:18px;line-height:1">←</span><span>Atrás</span></button>`
         : `<div class="spacer"></div>`}
       <div class="title">${esc(title)}</div>
-      <div class="spacer">${right}</div>
+      <div class="topbar-right">${right}${homeBtn}</div>
     </div>`;
 }
 
@@ -1132,17 +1148,17 @@ function renderEvaluation() {
       title: `${esc(ev.area)} · ${esc(ev.bimestre)}`,
       right: `<button class="topbar-action" data-action="goto-summary">Resumen</button>`
     })}
-    <div class="indicator-pill">${esc(ev.indicador || 'Sin indicador')}</div>
 
     <div class="progress-wrap">
       <div class="progress-meta">
-        <span>${idx + 1} de ${total}</span>
-        <span>${completed} evaluados</span>
+        <span>${idx + 1} de ${total} · ${completed} evaluados</span>
+        <span>${progress}%</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
     </div>
 
     <div class="student-card">
+      <div class="indicator-pill">${esc(ev.indicador || 'Sin indicador')}</div>
       <div class="student-name">${esc(rec.alumno)}</div>
       <div class="student-meta">${renderRecordMeta(rec)}</div>
     </div>
