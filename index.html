@@ -221,6 +221,16 @@
   .nav-row { display: flex; gap: 10px; margin-top: auto; padding-top: 16px; }
   .nav-row .btn { flex: 1; }
 
+  /* Evaluation picker — list of students with their current valor */
+  .eval-picker-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; text-align: left; min-height: 64px; transition: background .12s ease, border-color .12s ease; }
+  .eval-picker-row:active { background: var(--surface-alt); }
+  .eval-picker-row.evaluated { border-color: var(--border-strong); }
+  .eval-picker-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+  .eval-picker-body { flex: 1; min-width: 0; }
+  .eval-picker-name { font-size: 15px; font-weight: 600; }
+  .eval-picker-meta { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
+  .eval-picker-row.evaluated .eval-picker-meta { color: var(--text-soft); }
+
   /* ============================================================
    * SUMMARY
    * ============================================================ */
@@ -1124,6 +1134,7 @@ const SCREENS = {
   'setup-init': renderSetupInit,
   setup: renderSetup,
   evaluation: renderEvaluation,
+  'eval-student': renderEvalStudent,
   summary: renderSummary,
   history: renderHistory,
   'history-detail': renderHistoryDetail,
@@ -1141,7 +1152,7 @@ const SCREENS = {
 // because they have their own self-contained navigation (next/prev student,
 // finish evaluation, setup wizard) and benefit from the extra vertical
 // breathing room. Every other screen keeps the tab bar visible.
-const IMMERSIVE_SCREENS = new Set(['setup-init', 'setup', 'evaluation']);
+const IMMERSIVE_SCREENS = new Set(['setup-init', 'setup', 'evaluation', 'eval-student']);
 
 // Which tab "owns" each screen — used to highlight the active tab while
 // the user is inside a child screen. Defaults to 'home' if unmapped.
@@ -1563,16 +1574,16 @@ function renderActivityEmpty(currentArea, areasWithActivities) {
 /* ============================================================
  * UI — Evaluation screen (toggle valoración/nota)
  * ============================================================ */
+// Picker: free choice of which student to evaluate. Replaces the previous
+// linear anterior/siguiente flow — the teacher taps whoever they want
+// next based on how class is going, not a forced order.
 function renderEvaluation() {
   const ev = state.currentEval;
   if (!ev) { navigate('home'); return ''; }
-  const idx = state.studentIdx;
-  const rec = ev.records[idx];
   const total = ev.records.length;
-  const completed = ev.records.filter(r => r.valor).length;
-  const progress = Math.round((completed / total) * 100);
-  const obsOpen = !!(rec.observacion && rec.observacion.length);
-  const values = (ev.gradingSystem && ev.gradingSystem.values) || [];
+  const completed = ev.records.filter(r => r.valor != null).length;
+  const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const allDone = completed === total && total > 0;
 
   return `
     ${renderTopbar({
@@ -1583,10 +1594,68 @@ function renderEvaluation() {
 
     <div class="progress-wrap">
       <div class="progress-meta">
-        <span>${idx + 1} de ${total} · ${completed} evaluados</span>
+        <span>${completed} de ${total} evaluados</span>
         <span>${progress}%</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+    </div>
+
+    <div class="student-card" style="padding:12px 16px">
+      <div class="activity-pill">${esc(ev.actividad || 'Sin actividad')}</div>
+      <p class="muted" style="font-size:13px;margin-top:6px;line-height:1.4">Tocá un alumno para evaluar. Podés ir en el orden que prefieras.</p>
+    </div>
+
+    <div class="stack-tight" style="margin-bottom:16px">
+      ${ev.records.map((rec, idx) => renderEvalPickerRow(ev, rec, idx)).join('')}
+    </div>
+
+    <button class="btn ${allDone ? 'btn-primary' : 'btn-secondary'}" data-action="goto-summary">
+      ${allDone ? 'Ver resumen final →' : `Ver resumen parcial (${completed}/${total})`}
+    </button>
+  `;
+}
+
+function renderEvalPickerRow(ev, rec, idx) {
+  const v = lookupValue(ev, rec.valor);
+  const evaluated = !!v;
+  const hasObs = !!(rec.observacion && rec.observacion.trim());
+  return `
+    <button class="eval-picker-row ${evaluated ? 'evaluated' : ''}" data-action="open-eval-student" data-value="${idx}">
+      <span class="eval-picker-dot" style="background:${evaluated ? esc(v.color) : 'transparent'};${evaluated ? '' : 'border:1.5px dashed var(--border-strong)'}"></span>
+      <div class="eval-picker-body">
+        <div class="eval-picker-name">${esc(rec.alumno)}</div>
+        <div class="eval-picker-meta">
+          ${evaluated ? esc(v.label) : 'Sin evaluar'}${hasObs ? ' · ✎ con observación' : ''}
+        </div>
+      </div>
+      <span class="arrow" style="color:var(--text-mute);font-size:18px">›</span>
+    </button>`;
+}
+
+// Per-student detail screen. Reached by tapping a row in the picker.
+function renderEvalStudent() {
+  const ev = state.currentEval;
+  if (!ev) { navigate('home'); return ''; }
+  const idx = state.studentIdx;
+  const rec = ev.records[idx];
+  if (!rec) { navigate('evaluation'); return ''; }
+  const total = ev.records.length;
+  const completed = ev.records.filter(r => r.valor != null).length;
+  const obsOpen = !!(rec.observacion && rec.observacion.length);
+  // Position-ish indicator — not a forced order, just orientation.
+  const positionLabel = `${idx + 1} de ${total}`;
+
+  return `
+    ${renderTopbar({
+      back: true,
+      title: `${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}`,
+      right: `<button class="topbar-action" data-action="goto-summary">Resumen</button>`
+    })}
+
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span>${positionLabel} · ${completed} evaluados</span>
+      </div>
     </div>
 
     <div class="student-card">
@@ -1607,12 +1676,9 @@ function renderEvaluation() {
       </div>
     </div>
 
-    <div class="nav-row">
-      <button class="btn btn-secondary" data-action="prev-student" ${idx === 0 ? 'disabled' : ''}>← Anterior</button>
-      <button class="btn btn-primary" data-action="next-student">
-        ${idx === total - 1 ? 'Finalizar' : 'Siguiente →'}
-      </button>
-    </div>
+    <button class="btn btn-primary" data-action="back" style="margin-top:auto">
+      ← Volver a la lista
+    </button>
   `;
 }
 
@@ -2560,16 +2626,11 @@ const ACTIONS = {
 
   'set-valor': (v) => setValor(v),
 
-  'prev-student': () => {
-    if (state.studentIdx > 0) { state.studentIdx--; render(); }
-  },
-  'next-student': () => {
-    if (state.studentIdx < state.currentEval.records.length - 1) {
-      state.studentIdx++;
-      render();
-    } else {
-      showScreen('summary');
-    }
+  'open-eval-student': (v) => {
+    const idx = parseInt(v, 10);
+    if (!isFinite(idx)) return;
+    state.studentIdx = idx;
+    showScreen('eval-student');
   },
   'toggle-obs': () => toggleObs(),
 
@@ -3153,47 +3214,11 @@ function showOnboardingIfNeeded() {
 }
 
 /* ============================================================
- * SWIPE NAVIGATION (evaluation screen)
- * ============================================================ */
-let _touchStart = null;
-function attachSwipeNav() {
-  document.addEventListener('touchstart', (e) => {
-    if (state.screen !== 'evaluation' || state.modal) return;
-    if (e.touches.length !== 1) return;
-    const tag = (e.target && e.target.tagName) || '';
-    if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
-    const t = e.touches[0];
-    _touchStart = { x: t.clientX, y: t.clientY, time: Date.now() };
-  }, { passive: true });
-
-  document.addEventListener('touchend', (e) => {
-    const start = _touchStart;
-    _touchStart = null;
-    if (!start) return;
-    if (state.screen !== 'evaluation' || state.modal) return;
-    if (e.changedTouches.length !== 1) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - start.x;
-    const dy = t.clientY - start.y;
-    const dt = Date.now() - start.time;
-    if (dt > 600) return;
-    if (Math.abs(dx) < 60) return;
-    if (Math.abs(dy) > Math.abs(dx) * 0.6) return;
-    if (dx < 0) {
-      ACTIONS['next-student'] && ACTIONS['next-student']();
-    } else {
-      ACTIONS['prev-student'] && ACTIONS['prev-student']();
-    }
-  }, { passive: true });
-}
-
-/* ============================================================
  * INIT
  * ============================================================ */
 function init() {
   DB.load();
   state.screen = isSetupComplete() ? 'home' : 'setup-init';
-  attachSwipeNav();
   // Decide onboarding visibility before first paint so it never flashes
   // behind the screen below.
   showOnboardingIfNeeded();
