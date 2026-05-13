@@ -32,7 +32,7 @@
     --danger-soft: #fee2e2;
 
     /* Complementary accents used sparingly for variety */
-    --accent: #2DA5B5;            /* teal — info / indicator chips */
+    --accent: #2DA5B5;            /* teal — info / activity chips */
     --accent-dark: #1F8895;
     --accent-soft: #D6EDF1;
     --accent-2: #8B5CF6;          /* violet — bimester / accents */
@@ -172,9 +172,9 @@
   .choice-item .check { color: var(--text-mute); font-size: 14px; }
   .choice-item.active .check { color: var(--primary); }
 
-  .indicator-scroll { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding: 2px; -webkit-overflow-scrolling: touch; }
-  .indicator-scroll::-webkit-scrollbar { width: 4px; }
-  .indicator-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .activity-scroll { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding: 2px; -webkit-overflow-scrolling: touch; }
+  .activity-scroll::-webkit-scrollbar { width: 4px; }
+  .activity-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   /* ============================================================
    * EVALUATION
@@ -185,7 +185,7 @@
   .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%); border-radius: 3px; transition: width .3s ease; }
 
   .student-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; margin-bottom: 12px; }
-  .student-card .indicator-pill { margin-bottom: 6px; padding: 3px 10px; font-size: 11px; }
+  .student-card .activity-pill { margin-bottom: 6px; padding: 3px 10px; font-size: 11px; }
   .student-name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
   .student-meta { font-size: 12px; color: var(--text-mute); margin-top: 2px; font-weight: 500; }
 
@@ -235,7 +235,7 @@
   /* ============================================================
    * SUMMARY
    * ============================================================ */
-  .indicator-pill { display: inline-block; padding: 5px 12px; background: var(--accent-soft); color: var(--accent-dark); border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+  .activity-pill { display: inline-block; padding: 5px 12px; background: var(--accent-soft); color: var(--accent-dark); border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
   .summary-meta { font-size: 13px; color: var(--text-mute); margin-bottom: 20px; }
   .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
   .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
@@ -283,7 +283,7 @@
   .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: left; width: 100%; transition: background .12s ease; }
   .history-item:active { background: var(--surface-alt); }
   .history-date { font-size: 12px; color: var(--text-mute); font-weight: 500; margin-bottom: 4px; }
-  .history-indicator { font-size: 14px; font-weight: 600; line-height: 1.35; margin-bottom: 8px; }
+  .history-activity { font-size: 14px; font-weight: 600; line-height: 1.35; margin-bottom: 8px; }
   .history-stats { display: flex; gap: 10px; font-size: 12px; color: var(--text-soft); flex-wrap: wrap; }
   .history-stat { display: inline-flex; align-items: center; gap: 4px; }
   .history-stat .val-dot { width: 8px; height: 8px; }
@@ -412,11 +412,11 @@
   .setup-init-cta { margin-top: 8px; animation: fadeIn .35s ease; }
   .setup-init-cta .btn-lg { background: linear-gradient(135deg, var(--primary) 0%, var(--accent-3) 100%); box-shadow: 0 6px 18px rgba(var(--primary-rgb),0.32); }
 
-  /* Indicator-area picker (pills) */
+  /* Activity-area picker (pills) */
   .area-pills { display: flex; flex-wrap: wrap; gap: 8px; }
   .area-pill { padding: 12px 16px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--border); font-size: 13px; font-weight: 500; color: var(--text-soft); min-height: 48px; }
   .area-pill.active { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-dark); font-weight: 600; }
-  .indicator-area-tag { display: inline-block; padding: 2px 8px; background: var(--surface-alt); color: var(--text-soft); border-radius: 999px; font-size: 11px; font-weight: 600; margin-top: 4px; }
+  .activity-area-tag { display: inline-block; padding: 2px 8px; background: var(--surface-alt); color: var(--text-soft); border-radius: 999px; font-size: 11px; font-weight: 600; margin-top: 4px; }
 
   /* Modal (confirm dialogs, setup guard) */
   .modal-backdrop { position: fixed; inset: 0; background: rgba(28,25,23,0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 200; animation: fadeIn .15s ease; }
@@ -506,7 +506,7 @@
     <ol class="onboarding-list">
       <li>Áreas (materias que evaluás)</li>
       <li>Bimestres (períodos lectivos)</li>
-      <li>Indicadores (criterios de evaluación)</li>
+      <li>Actividades (criterios de evaluación)</li>
       <li>Alumnos (lista del curso)</li>
     </ol>
     <p class="onboarding-text" style="font-size:14px;background:var(--warm-tint);padding:12px 14px;border-radius:10px;margin-bottom:20px">💡 Cuando termines, podés exportar todas las notas a una planilla (CSV) desde Historial.</p>
@@ -533,7 +533,7 @@ const DEFAULTS = {
     'Camila Fernández', 'Santiago Pérez', 'Isabella González', 'Benjamín Díaz',
     'Lucía Torres', 'Joaquín Ramírez'
   ],
-  INDICATORS: []
+  ACTIVITIES: []
 };
 
 const VALORACIONES = [
@@ -544,7 +544,7 @@ const VALORACIONES = [
 ];
 const VAL_MAP = Object.fromEntries(VALORACIONES.map(v => [v.id, v]));
 
-const EMPTY_FILTER = { student: '', indicadorId: '', area: '', bimestre: '' };
+const EMPTY_FILTER = { student: '', actividadId: '', area: '', bimestre: '' };
 
 function countValoraciones(ev) {
   const counts = { logrado: 0, proceso: 0, apoyo: 0, noeval: 0 };
@@ -555,7 +555,7 @@ function countValoraciones(ev) {
 function matchesEval(ev, f) {
   if (f.area && ev.area !== f.area) return false;
   if (f.bimestre && ev.bimestre !== f.bimestre) return false;
-  if (f.indicadorId && ev.indicadorId !== f.indicadorId) return false;
+  if (f.actividadId && ev.actividadId !== f.actividadId) return false;
   return true;
 }
 
@@ -635,31 +635,43 @@ const DB = {
     } catch (e) { data = {}; }
 
     if (!Array.isArray(data.evaluations)) data.evaluations = [];
+    // Legacy rename: 'indicators' → 'activities'. Run before the activities
+    // default-fill below so existing user data survives the rename.
+    if (Array.isArray(data.indicators) && !Array.isArray(data.activities)) {
+      data.activities = data.indicators;
+      delete data.indicators;
+    }
+    data.evaluations.forEach(ev => {
+      if (ev.indicador != null && ev.actividad == null) { ev.actividad = ev.indicador; }
+      if (ev.indicadorId != null && ev.actividadId == null) { ev.actividadId = ev.indicadorId; }
+      delete ev.indicador;
+      delete ev.indicadorId;
+    });
     if (!Array.isArray(data.areas) || data.areas.length === 0) {
       data.areas = [...DEFAULTS.AREAS];
     }
     if (!Array.isArray(data.bimesters) || data.bimesters.length === 0) {
       data.bimesters = [...DEFAULTS.BIMESTERS];
     }
-    if (!Array.isArray(data.indicators) || data.indicators.length === 0) {
-      data.indicators = DEFAULTS.INDICATORS.map(text => ({ id: generateId(), text, area: data.areas[0] }));
+    if (!Array.isArray(data.activities) || data.activities.length === 0) {
+      data.activities = DEFAULTS.ACTIVITIES.map(text => ({ id: generateId(), text, area: data.areas[0] }));
     }
     if (!Array.isArray(data.groups)) data.groups = [];
     if (!data.studentGroups || typeof data.studentGroups !== 'object') data.studentGroups = {};
     this._data = data;
-    this._normalizeIndicators();
+    this._normalizeActivities();
     return data;
   },
 
-  // Reassign orphan indicators (missing area or area no longer in list) to first area.
-  // Runs on every getIndicators() call so newly-added areas or renamed areas reconcile
-  // indicators created in edge cases (e.g. before any area existed).
-  _normalizeIndicators() {
+  // Reassign orphan activities (missing area or area no longer in list) to first area.
+  // Runs on every getActivities() call so newly-added areas or renamed areas reconcile
+  // activities created in edge cases (e.g. before any area existed).
+  _normalizeActivities() {
     const data = this._data;
     if (!data || !Array.isArray(data.areas) || data.areas.length === 0) return;
     const valid = new Set(data.areas);
     let changed = false;
-    data.indicators.forEach(ind => {
+    data.activities.forEach(ind => {
       if (!ind.area || !valid.has(ind.area)) {
         ind.area = data.areas[0];
         changed = true;
@@ -709,28 +721,28 @@ const DB = {
     }
   },
 
-  /* ---- Indicators ---- */
-  getIndicators() {
+  /* ---- Activities ---- */
+  getActivities() {
     const data = this.load();
-    this._normalizeIndicators();
-    return data.indicators;
+    this._normalizeActivities();
+    return data.activities;
   },
-  getIndicatorsByArea(area) {
-    return this.getIndicators().filter(i => i.area === area);
+  getActivitiesByArea(area) {
+    return this.getActivities().filter(i => i.area === area);
   },
 
-  addIndicator(text, area) {
+  addActivity(text, area) {
     const data = this.load();
     const resolvedArea = area || data.areas[0];
     if (!resolvedArea) return null;
     const ind = { id: generateId(), text: text.trim(), area: resolvedArea };
-    data.indicators.push(ind);
+    data.activities.push(ind);
     this.save();
     return ind;
   },
 
-  updateIndicator(id, text, area) {
-    const ind = this.load().indicators.find(i => i.id === id);
+  updateActivity(id, text, area) {
+    const ind = this.load().activities.find(i => i.id === id);
     if (!ind) return null;
     ind.text = text.trim();
     if (area) ind.area = area;
@@ -738,9 +750,9 @@ const DB = {
     return ind;
   },
 
-  deleteIndicator(id) {
+  deleteActivity(id) {
     const data = this.load();
-    data.indicators = data.indicators.filter(i => i.id !== id);
+    data.activities = data.activities.filter(i => i.id !== id);
     this.save();
   },
 
@@ -768,7 +780,7 @@ const DB = {
     const norm = v.toLowerCase();
     if (data.areas.some((a, i) => i !== idx && a.toLowerCase() === norm)) return false;
     data.areas[idx] = v;
-    data.indicators.forEach(ind => { if (ind.area === oldName) ind.area = v; });
+    data.activities.forEach(ind => { if (ind.area === oldName) ind.area = v; });
     data.evaluations.forEach(ev => { if (ev.area === oldName) ev.area = v; });
     this.save();
     return true;
@@ -779,9 +791,9 @@ const DB = {
     data.areas = data.areas.filter(a => a !== name);
     const fallback = data.areas[0];
     if (fallback) {
-      data.indicators.forEach(ind => { if (ind.area === name) ind.area = fallback; });
+      data.activities.forEach(ind => { if (ind.area === name) ind.area = fallback; });
     } else {
-      data.indicators = data.indicators.filter(ind => ind.area !== name);
+      data.activities = data.activities.filter(ind => ind.area !== name);
     }
     this.save();
   },
@@ -891,14 +903,14 @@ const DB = {
   getEvaluations() { return this.load().evaluations; },
   getEvaluation(id) { return this.getEvaluations().find(e => e.id === id) || null; },
 
-  createEvaluation({ area, bimestre, indicadorId, indicador, group = null, students }) {
+  createEvaluation({ area, bimestre, actividadId, actividad, group = null, students }) {
     const evalu = {
       id: generateId(),
       date: new Date().toISOString(),
       area,
       bimestre,
-      indicadorId,
-      indicador,
+      actividadId,
+      actividad,
       group,
       records: students.map(name => ({ alumno: name, valoracion: null, nota: null, observacion: '' }))
     };
@@ -930,12 +942,12 @@ const DB = {
 const state = {
   screen: 'home',
   backStack: [],
-  setup: { area: null, indicadorId: null, bimestre: null, group: null },
+  setup: { area: null, actividadId: null, bimestre: null, group: null },
   currentEval: null,
   studentIdx: 0,
   evalMode: 'valoracion',   // 'valoracion' | 'nota'
   filter: { ...EMPTY_FILTER },
-  indicatorEdit: { editingId: null, adding: false, draft: '', areaDraft: null },
+  activityEdit: { editingId: null, adding: false, draft: '', areaDraft: null },
   areaEdit: { editingName: null, draft: '' },
   bimesterEdit: { editingName: null, draft: '' },
   manageGroupName: null,
@@ -958,7 +970,7 @@ const SCREENS = {
   'history-detail': renderHistoryDetail,
   students: renderStudentsView,
   'config-students': renderConfigStudents,
-  'config-indicators': renderConfigIndicators,
+  'config-activities': renderConfigActivities,
   'config-areas': renderConfigAreas,
   'config-bimesters': renderConfigBimesters,
   'config-groups': renderConfigGroups,
@@ -982,7 +994,7 @@ const SCREEN_TAB = {
   'config-hub': 'config-hub',
   'config-areas': 'config-hub',
   'config-bimesters': 'config-hub',
-  'config-indicators': 'config-hub',
+  'config-activities': 'config-hub',
   'config-groups': 'config-hub',
   'config-students': 'config-hub',
   'manage-group': 'config-hub',
@@ -990,7 +1002,7 @@ const SCREEN_TAB = {
 
 function isSetupComplete() {
   return DB.getAreas().length > 0
-    && DB.getIndicators().length > 0
+    && DB.getActivities().length > 0
     && DB.getBimesters().length > 0
     && DB.getStudents().length > 0;
 }
@@ -1156,7 +1168,7 @@ function renderHome() {
 
 function renderConfigHub() {
   const students = DB.getStudents();
-  const indicators = DB.getIndicators();
+  const activities = DB.getActivities();
   const areas = DB.getAreas();
   const bimesters = DB.getBimesters();
   const groups = DB.getGroups();
@@ -1176,10 +1188,10 @@ function renderConfigHub() {
           </div>
           <span class="arrow">›</span>
         </button>
-        <button class="home-link" data-action="config-indicators">
+        <button class="home-link" data-action="config-activities">
           <div class="home-link-body">
-            <div class="home-link-title">Indicadores</div>
-            <div class="home-link-meta">${indicators.length} ${indicators.length === 1 ? 'indicador' : 'indicadores'}</div>
+            <div class="home-link-title">Actividades</div>
+            <div class="home-link-meta">${activities.length} ${activities.length === 1 ? 'actividad' : 'actividades'}</div>
           </div>
           <span class="arrow">›</span>
         </button>
@@ -1212,13 +1224,13 @@ function renderConfigHub() {
 function renderSetupInit() {
   const areas = DB.getAreas();
   const bimesters = DB.getBimesters();
-  const indicators = DB.getIndicators();
+  const activities = DB.getActivities();
   const students = DB.getStudents();
 
   const items = [
     { num: 1, name: 'Áreas',       desc: 'Materias que evaluás (ej: Lengua, Matemática).', done: areas.length > 0,      count: areas.length,      screen: 'config-areas',      accent: 'orange' },
     { num: 2, name: 'Bimestres',   desc: 'Períodos lectivos del año.',                     done: bimesters.length > 0,  count: bimesters.length,  screen: 'config-bimesters',  accent: 'violet' },
-    { num: 3, name: 'Indicadores', desc: 'Criterios que vas a evaluar.',                   done: indicators.length > 0, count: indicators.length, screen: 'config-indicators', accent: 'teal'   },
+    { num: 3, name: 'Actividades', desc: 'Criterios que vas a evaluar.',                   done: activities.length > 0, count: activities.length, screen: 'config-activities', accent: 'teal'   },
     { num: 4, name: 'Alumnos',     desc: 'Lista de tu curso (pegá nombres).',              done: students.length > 0,   count: students.length,   screen: 'config-students',   accent: 'green'  },
   ];
   const doneCount = items.filter(i => i.done).length;
@@ -1272,20 +1284,20 @@ function renderSetupInit() {
 function renderSetup() {
   const s = state.setup;
   const areas = DB.getAreas();
-  const allIndicators = DB.getIndicators();
-  const indicators = s.area ? allIndicators.filter(i => i.area === s.area) : [];
-  // Areas where indicators exist — used to nudge the user when current area is empty
-  const areasWithIndicators = areas.filter(a => allIndicators.some(i => i.area === a));
+  const allActivities = DB.getActivities();
+  const activities = s.area ? allActivities.filter(i => i.area === s.area) : [];
+  // Areas where activities exist — used to nudge the user when current area is empty
+  const areasWithActivities = areas.filter(a => allActivities.some(i => i.area === a));
   const bimesters = DB.getBimesters();
   const groups = DB.getGroups();
   const studentsInGroup = DB.getStudentsInGroup(s.group);
-  const canStart = s.area && s.indicadorId && s.bimestre && studentsInGroup.length > 0;
+  const canStart = s.area && s.actividadId && s.bimestre && studentsInGroup.length > 0;
 
   return `
     ${renderTopbar({ back: true, title: 'Nueva evaluación' })}
     <div class="mb-20">
       <div class="h2">Configurar</div>
-      <p class="lead">Seleccioná área, indicador y bimestre.</p>
+      <p class="lead">Seleccioná área, actividad y bimestre.</p>
     </div>
 
     <div class="mb-20">
@@ -1331,20 +1343,20 @@ function renderSetup() {
 
     <div class="mb-20" style="flex:1; min-height:0; display:flex; flex-direction:column;">
       <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Indicador</span>
-        <button class="topbar-action" data-action="config-indicators" style="font-size:12px;text-transform:none;letter-spacing:0">Gestionar</button>
+        <span>Actividad</span>
+        <button class="topbar-action" data-action="config-activities" style="font-size:12px;text-transform:none;letter-spacing:0">Gestionar</button>
       </div>
       ${!s.area
         ? renderEmpty('📋', 'Elegí un área', 'Primero seleccioná un área arriba.')
-        : indicators.length === 0
-          ? renderIndicatorEmpty(s.area, areasWithIndicators)
-          : `<div class="indicator-scroll">
-              ${indicators.map((ind, i) => `
-                <button class="choice-item ${s.indicadorId === ind.id ? 'active' : ''}" data-action="set-indicador" data-value="${esc(ind.id)}">
+        : activities.length === 0
+          ? renderActivityEmpty(s.area, areasWithActivities)
+          : `<div class="activity-scroll">
+              ${activities.map((ind, i) => `
+                <button class="choice-item ${s.actividadId === ind.id ? 'active' : ''}" data-action="set-actividad" data-value="${esc(ind.id)}">
                   <div class="choice-item-body">
                     <div class="choice-item-title">${String(i + 1).padStart(2,'0')}. ${esc(ind.text)}</div>
                   </div>
-                  <span class="check">${s.indicadorId === ind.id ? '✓' : '○'}</span>
+                  <span class="check">${s.actividadId === ind.id ? '✓' : '○'}</span>
                 </button>`).join('')}
             </div>`}
     </div>
@@ -1355,13 +1367,13 @@ function renderSetup() {
   `;
 }
 
-function renderIndicatorEmpty(currentArea, areasWithIndicators) {
-  const others = areasWithIndicators.filter(a => a !== currentArea);
+function renderActivityEmpty(currentArea, areasWithActivities) {
+  const others = areasWithActivities.filter(a => a !== currentArea);
   return `
     <div class="empty">
       <div class="empty-icon">📋</div>
-      <div class="empty-title">Sin indicadores en ${esc(currentArea)}</div>
-      <div class="empty-text">No hay indicadores cargados para esta área.</div>
+      <div class="empty-title">Sin actividades en ${esc(currentArea)}</div>
+      <div class="empty-text">No hay actividades cargadas para esta área.</div>
       ${others.length > 0 ? `
         <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
           ${others.map(a => `
@@ -1372,8 +1384,8 @@ function renderIndicatorEmpty(currentArea, areasWithIndicators) {
         </div>
       ` : ''}
       <div style="margin-top:14px">
-        <button class="btn btn-secondary" data-action="config-indicators" style="font-size:14px;min-height:44px">
-          + Crear indicador
+        <button class="btn btn-secondary" data-action="config-activities" style="font-size:14px;min-height:44px">
+          + Crear actividad
         </button>
       </div>
     </div>`;
@@ -1409,7 +1421,7 @@ function renderEvaluation() {
     </div>
 
     <div class="student-card">
-      <div class="indicator-pill">${esc(ev.indicador || 'Sin indicador')}</div>
+      <div class="activity-pill">${esc(ev.actividad || 'Sin actividad')}</div>
       <div class="student-name">${esc(rec.alumno)}</div>
       <div class="student-meta">${renderRecordMeta(rec)}</div>
     </div>
@@ -1492,8 +1504,8 @@ function renderSummaryView(ev, isHistory) {
       title: isHistory ? 'Detalle' : 'Resumen',
       crumb: isHistory ? 'Historial' : 'Evaluación'
     })}
-    <div class="indicator-pill">${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
-    <div class="h3" style="margin-bottom:4px">${esc(ev.indicador)}</div>
+    <div class="activity-pill">${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
+    <div class="h3" style="margin-bottom:4px">${esc(ev.actividad)}</div>
     <div class="summary-meta">${formatDate(ev.date)}</div>
 
     <div class="summary-grid">
@@ -1547,7 +1559,7 @@ function renderSummaryView(ev, isHistory) {
 
     <div class="stack-tight" style="margin-top:24px">
       ${!isHistory ? `<button class="btn btn-primary" data-action="continue-eval">Volver a evaluación</button>` : ''}
-      ${!isHistory ? `<button class="btn btn-secondary" data-action="eval-another">Evaluar otro indicador</button>` : ''}
+      ${!isHistory ? `<button class="btn btn-secondary" data-action="eval-another">Evaluar otra actividad</button>` : ''}
       ${isHistory ? `<button class="btn btn-danger" data-action="delete-eval">Eliminar evaluación</button>` : ''}
     </div>
   `;
@@ -1581,7 +1593,7 @@ function renderHistory() {
   const all = DB.getEvaluations();
   const f = state.filter;
   const students = DB.getStudents();
-  const indicators = DB.getIndicators();
+  const activities = DB.getActivities();
   const areas = DB.getAreas();
   const bimesters = DB.getBimesters();
 
@@ -1606,9 +1618,9 @@ function renderHistory() {
         <option value="">Todos los alumnos</option>
         ${students.map(s => `<option value="${esc(s)}" ${f.student === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
       </select>
-      <select class="input" id="f-indicador" data-action="filter-indicador">
-        <option value="">Todos los indicadores</option>
-        ${indicators.map((i, n) => `<option value="${esc(i.id)}" ${f.indicadorId === i.id ? 'selected' : ''}>${String(n+1).padStart(2,'0')}. ${esc(i.text.slice(0, 40))}</option>`).join('')}
+      <select class="input" id="f-actividad" data-action="filter-actividad">
+        <option value="">Todas las actividades</option>
+        ${activities.map((i, n) => `<option value="${esc(i.id)}" ${f.actividadId === i.id ? 'selected' : ''}>${String(n+1).padStart(2,'0')}. ${esc(i.text.slice(0, 40))}</option>`).join('')}
       </select>
       <select class="input" id="f-area" data-action="filter-area">
         <option value="">Todas las áreas</option>
@@ -1620,7 +1632,7 @@ function renderHistory() {
       </select>
     </div>
 
-    ${(f.student || f.indicadorId || f.area || f.bimestre) ? `
+    ${(f.student || f.actividadId || f.area || f.bimestre) ? `
       <button class="btn btn-ghost" data-action="filter-clear" style="font-size:13px;min-height:36px;margin-bottom:12px;color:var(--primary)">Limpiar filtros</button>
     ` : ''}
 
@@ -1638,7 +1650,7 @@ function renderHistoryItem(ev) {
   return `
     <button class="history-item" data-action="open-eval" data-id="${esc(ev.id)}">
       <div class="history-date">${formatDate(ev.date)} · ${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
-      <div class="history-indicator">${esc(ev.indicador)}</div>
+      <div class="history-activity">${esc(ev.actividad)}</div>
       <div class="history-stats">
         <span class="history-stat" style="color:var(--text-mute)">${completed}/${ev.records.length}</span>
         ${VALORACIONES.map(v => counts[v.id] > 0 ? `<span class="history-stat"><span class="val-dot" style="background:${v.color}"></span>${counts[v.id]}</span>` : '').join('')}
@@ -1647,26 +1659,26 @@ function renderHistoryItem(ev) {
 }
 
 /* ============================================================
- * UI — Students view (with colored dots per indicator)
+ * UI — Students view (with colored dots per activity)
  * ============================================================ */
 function renderStudentsView() {
   const allStudents = DB.getStudents();
   const groups = DB.getGroups();
   const filterGroup = state.studentsFilter.group;
   const students = filterGroup ? allStudents.filter(s => DB.getStudentGroup(s) === filterGroup) : allStudents;
-  const indicators = DB.getIndicators();
+  const activities = DB.getActivities();
   const allEvals = DB.getEvaluations();
 
-  // Build index: evalsByIndicator[id] -> sorted descending by date
-  const evalsByIndicator = {};
+  // Build index: evalsByActivity[id] -> sorted descending by date
+  const evalsByActivity = {};
   allEvals.forEach(ev => {
-    if (!ev.indicadorId) return;
-    (evalsByIndicator[ev.indicadorId] ||= []).push(ev);
+    if (!ev.actividadId) return;
+    (evalsByActivity[ev.actividadId] ||= []).push(ev);
   });
-  Object.values(evalsByIndicator).forEach(arr => arr.sort((a, b) => new Date(b.date) - new Date(a.date)));
+  Object.values(evalsByActivity).forEach(arr => arr.sort((a, b) => new Date(b.date) - new Date(a.date)));
 
   function latestForStudent(student, indId) {
-    const arr = evalsByIndicator[indId] || [];
+    const arr = evalsByActivity[indId] || [];
     for (const ev of arr) {
       const rec = ev.records.find(r => r.alumno === student);
       if (rec && rec.valoracion) return { val: rec.valoracion, nota: rec.nota, date: ev.date, obs: rec.observacion };
@@ -1700,17 +1712,17 @@ function renderStudentsView() {
 
     ${students.length === 0
       ? renderEmpty('👤', filterGroup ? `Sin alumnos en "${filterGroup}"` : 'Sin alumnos', filterGroup ? 'Asigná alumnos a este grupo o elegí otro.' : 'Cargá alumnos desde Configurar.')
-      : indicators.length === 0
-        ? renderEmpty('📋', 'Sin indicadores', 'Creá indicadores para empezar a evaluar.')
+      : activities.length === 0
+        ? renderEmpty('📋', 'Sin actividades', 'Creá actividades para empezar a evaluar.')
         : `<div class="students-list">
-            ${students.map(student => renderStudentRow(student, indicators, latestForStudent)).join('')}
+            ${students.map(student => renderStudentRow(student, activities, latestForStudent)).join('')}
           </div>`}
   `;
 }
 
-function renderStudentRow(student, indicators, latestForStudent) {
+function renderStudentRow(student, activities, latestForStudent) {
   const expanded = state.expandedStudent === student;
-  const cells = indicators.map(ind => ({ ind, last: latestForStudent(student, ind.id) }));
+  const cells = activities.map(ind => ({ ind, last: latestForStudent(student, ind.id) }));
   const withData = cells.filter(c => c.last);
 
   return `
@@ -1802,32 +1814,32 @@ function renderStudentManageItem(name, groups, hasGroups) {
 }
 
 /* ============================================================
- * UI — Config: Indicators
+ * UI — Config: Activities
  * ============================================================ */
-function renderConfigIndicators() {
-  const indicators = DB.getIndicators();
+function renderConfigActivities() {
+  const activities = DB.getActivities();
   const areas = DB.getAreas();
-  const editState = state.indicatorEdit;
+  const editState = state.activityEdit;
   const showAreaPicker = areas.length > 1;
   const areaDraft = editState.areaDraft || areas[0];
 
   return `
-    ${renderTopbar({ back: true, title: 'Indicadores', crumb: 'Config' })}
+    ${renderTopbar({ back: true, title: 'Actividades', crumb: 'Config' })}
     <div class="mb-20">
-      <div class="h2">Indicadores</div>
-      <p class="lead">Creá, editá o eliminá indicadores.</p>
+      <div class="h2">Actividades</div>
+      <p class="lead">Creá, editá o eliminá actividades.</p>
     </div>
 
     ${editState.adding ? `
       <div class="add-card">
-        <div class="section-label">Nuevo indicador</div>
-        <textarea class="input" id="new-indicator-input" rows="3" placeholder="Escribí el indicador...">${esc(editState.draft)}</textarea>
+        <div class="section-label">Nueva actividad</div>
+        <textarea class="input" id="new-activity-input" rows="3" placeholder="Escribí la actividad...">${esc(editState.draft)}</textarea>
         ${showAreaPicker ? `
           <div>
             <div class="muted" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--primary-dark)">Área</div>
             <div class="area-pills">
               ${areas.map(a => `
-                <button class="area-pill ${areaDraft === a ? 'active' : ''}" data-action="indicator-set-area" data-value="${esc(a)}">${esc(a)}</button>
+                <button class="area-pill ${areaDraft === a ? 'active' : ''}" data-action="activity-set-area" data-value="${esc(a)}">${esc(a)}</button>
               `).join('')}
             </div>
           </div>
@@ -1840,32 +1852,32 @@ function renderConfigIndicators() {
     ` : `
       <button class="add-btn-inline" data-action="start-add">
         <span class="plus">+</span>
-        <span>Nuevo indicador</span>
+        <span>Nueva actividad</span>
       </button>
     `}
 
-    ${indicators.length === 0
-      ? renderEmpty('📋', 'Sin indicadores', 'Tocá "Nuevo indicador" para crear el primero.')
-      : renderIndicatorsByArea(indicators, areas, editState, showAreaPicker)}
+    ${activities.length === 0
+      ? renderEmpty('📋', 'Sin actividades', 'Tocá "Nueva actividad" para crear la primera.')
+      : renderActivitiesByArea(activities, areas, editState, showAreaPicker)}
   `;
 }
 
-function renderIndicatorsByArea(indicators, areas, editState, showAreaPicker) {
+function renderActivitiesByArea(activities, areas, editState, showAreaPicker) {
   if (!showAreaPicker) {
     return `<div class="stack-tight">
-      ${indicators.map((ind, i) => renderIndicatorItem(ind, i, editState, areas, false)).join('')}
+      ${activities.map((ind, i) => renderActivityItem(ind, i, editState, areas, false)).join('')}
     </div>`;
   }
-  const groups = areas.map(a => ({ area: a, items: indicators.filter(i => i.area === a) })).filter(g => g.items.length > 0);
+  const groups = areas.map(a => ({ area: a, items: activities.filter(i => i.area === a) })).filter(g => g.items.length > 0);
   return groups.map(g => `
     <div class="section-label" style="margin-top:16px;margin-bottom:8px">${esc(g.area)}</div>
     <div class="stack-tight">
-      ${g.items.map((ind, i) => renderIndicatorItem(ind, i, editState, areas, true)).join('')}
+      ${g.items.map((ind, i) => renderActivityItem(ind, i, editState, areas, true)).join('')}
     </div>
   `).join('');
 }
 
-function renderIndicatorItem(ind, i, editState, areas, showAreaPicker) {
+function renderActivityItem(ind, i, editState, areas, showAreaPicker) {
   const num = String(i + 1).padStart(2, '0');
   if (editState.editingId === ind.id) {
     const areaDraft = editState.areaDraft || ind.area || areas[0];
@@ -1873,13 +1885,13 @@ function renderIndicatorItem(ind, i, editState, areas, showAreaPicker) {
       <div class="manage-item">
         <span class="manage-num">${num}</span>
         <div class="manage-edit">
-          <textarea class="input" id="edit-indicator-input" rows="3">${esc(editState.draft)}</textarea>
+          <textarea class="input" id="edit-activity-input" rows="3">${esc(editState.draft)}</textarea>
           ${showAreaPicker ? `
             <div>
               <div class="muted" style="margin-bottom:6px;font-size:12px;font-weight:600">Área</div>
               <div class="area-pills">
                 ${areas.map(a => `
-                  <button class="area-pill ${areaDraft === a ? 'active' : ''}" data-action="indicator-set-area" data-value="${esc(a)}">${esc(a)}</button>
+                  <button class="area-pill ${areaDraft === a ? 'active' : ''}" data-action="activity-set-area" data-value="${esc(a)}">${esc(a)}</button>
                 `).join('')}
               </div>
             </div>
@@ -1897,7 +1909,7 @@ function renderIndicatorItem(ind, i, editState, areas, showAreaPicker) {
       <div class="manage-text">${esc(ind.text)}</div>
       <div class="manage-actions">
         <button class="icon-btn" data-action="start-edit" data-value="${esc(ind.id)}" aria-label="Editar">✎</button>
-        <button class="icon-btn danger" data-action="delete-indicator" data-value="${esc(ind.id)}" aria-label="Eliminar">×</button>
+        <button class="icon-btn danger" data-action="delete-activity" data-value="${esc(ind.id)}" aria-label="Eliminar">×</button>
       </div>
     </div>`;
 }
@@ -2120,14 +2132,14 @@ function attachHandlers() {
     obsInput.addEventListener('blur', () => onObsBlur(capturedIdx, capturedEvalId));
   }
 
-  const newInd = $('new-indicator-input');
+  const newInd = $('new-activity-input');
   if (newInd) {
-    newInd.addEventListener('input', e => { state.indicatorEdit.draft = e.target.value; });
+    newInd.addEventListener('input', e => { state.activityEdit.draft = e.target.value; });
     setTimeout(() => newInd.focus(), 50);
   }
-  const editInd = $('edit-indicator-input');
+  const editInd = $('edit-activity-input');
   if (editInd) {
-    editInd.addEventListener('input', e => { state.indicatorEdit.draft = e.target.value; });
+    editInd.addEventListener('input', e => { state.activityEdit.draft = e.target.value; });
     setTimeout(() => { editInd.focus(); editInd.setSelectionRange(editInd.value.length, editInd.value.length); }, 50);
   }
 
@@ -2166,7 +2178,7 @@ function onSelectChange(e) {
 
   // History page filters: mutate the filter and re-render.
   if (action === 'filter-student')   { state.filter.student = value;     render(); return; }
-  if (action === 'filter-indicador') { state.filter.indicadorId = value; render(); return; }
+  if (action === 'filter-actividad') { state.filter.actividadId = value; render(); return; }
   if (action === 'filter-area')      { state.filter.area = value;        render(); return; }
   if (action === 'filter-bimestre')  { state.filter.bimestre = value;    render(); return; }
 
@@ -2195,7 +2207,7 @@ const ACTIONS = {
     const bims = DB.getBimesters();
     state.setup = {
       area: areas[0] || null,
-      indicadorId: null,
+      actividadId: null,
       bimestre: currentBimestreLabel(bims),
       group: null,
     };
@@ -2213,21 +2225,21 @@ const ACTIONS = {
   },
 
   'config-students':    () => showScreen('config-students'),
-  'config-indicators':  () => {
-    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
-    showScreen('config-indicators');
+  'config-activities':  () => {
+    state.activityEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
+    showScreen('config-activities');
   },
   'config-areas':       () => showScreen('config-areas'),
   'config-bimesters':   () => showScreen('config-bimesters'),
   'config-groups':      () => showScreen('config-groups'),
 
   'set-area':       (v) => {
-    if (state.setup.area !== v) state.setup.indicadorId = null;
+    if (state.setup.area !== v) state.setup.actividadId = null;
     state.setup.area = v;
     render();
   },
   'set-bimestre':   (v) => { state.setup.bimestre = v; render(); },
-  'set-indicador':  (v) => { state.setup.indicadorId = v; render(); },
+  'set-actividad':  (v) => { state.setup.actividadId = v; render(); },
   'set-group':      (v) => { state.setup.group = (v === '__all__' ? null : v); render(); },
   'start-eval':     () => startEvaluation(),
 
@@ -2278,43 +2290,43 @@ const ACTIONS = {
 
   'start-add': () => {
     const setupArea = state.setup && state.setup.area;
-    state.indicatorEdit = { editingId: null, adding: true, draft: '', areaDraft: setupArea || DB.getAreas()[0] || null };
+    state.activityEdit = { editingId: null, adding: true, draft: '', areaDraft: setupArea || DB.getAreas()[0] || null };
     render();
   },
   'cancel-add': () => {
-    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
+    state.activityEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     render();
   },
   'save-add': () => {
-    const text = (state.indicatorEdit.draft || '').trim();
-    if (!text) { toast('Escribí el indicador'); return; }
-    const area = state.indicatorEdit.areaDraft || DB.getAreas()[0];
+    const text = (state.activityEdit.draft || '').trim();
+    if (!text) { toast('Escribí la actividad'); return; }
+    const area = state.activityEdit.areaDraft || DB.getAreas()[0];
     if (!area) { toast('Creá un área primero'); return; }
-    DB.addIndicator(text, area);
-    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
-    toast('Indicador creado');
+    DB.addActivity(text, area);
+    state.activityEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
+    toast('Actividad creada');
     render();
   },
   'start-edit': (v) => {
-    const ind = DB.getIndicators().find(i => i.id === v);
-    state.indicatorEdit = { editingId: v, adding: false, draft: ind ? ind.text : '', areaDraft: ind ? ind.area : null };
+    const ind = DB.getActivities().find(i => i.id === v);
+    state.activityEdit = { editingId: v, adding: false, draft: ind ? ind.text : '', areaDraft: ind ? ind.area : null };
     render();
   },
   'cancel-edit': () => {
-    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
+    state.activityEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     render();
   },
   'save-edit': (v) => {
-    const text = (state.indicatorEdit.draft || '').trim();
+    const text = (state.activityEdit.draft || '').trim();
     if (!text) { toast('No puede quedar vacío'); return; }
-    const area = state.indicatorEdit.areaDraft;
-    DB.updateIndicator(v, text, area);
-    state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
-    toast('Indicador actualizado');
+    const area = state.activityEdit.areaDraft;
+    DB.updateActivity(v, text, area);
+    state.activityEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
+    toast('Actividad actualizada');
     render();
   },
-  'indicator-set-area': (v) => {
-    state.indicatorEdit.areaDraft = v;
+  'activity-set-area': (v) => {
+    state.activityEdit.areaDraft = v;
     render();
   },
 
@@ -2424,19 +2436,19 @@ const ACTIONS = {
   },
 
   'eval-another': () => {
-    state.setup.indicadorId = null;
+    state.setup.actividadId = null;
     state.currentEval = null;
     navigate('setup');
   },
-  'delete-indicator': (v) => {
-    const ind = DB.getIndicators().find(i => i.id === v);
-    const name = ind ? (ind.text.length > 60 ? ind.text.slice(0, 60) + '…' : ind.text) : 'este indicador';
+  'delete-activity': (v) => {
+    const ind = DB.getActivities().find(i => i.id === v);
+    const name = ind ? (ind.text.length > 60 ? ind.text.slice(0, 60) + '…' : ind.text) : 'esta actividad';
     showConfirm({
       title: `¿Eliminar "${name}"?`,
       text: 'Las evaluaciones existentes mantendrán su texto histórico.',
       onConfirm: () => {
-        DB.deleteIndicator(v);
-        toast('Indicador eliminado');
+        DB.deleteActivity(v);
+        toast('Actividad eliminada');
         render();
       }
     });
@@ -2459,9 +2471,9 @@ const ACTIONS = {
 
   'delete-area': (v) => {
     if (DB.getAreas().length <= 1) { toast('Tiene que quedar al menos un área'); return; }
-    const affected = DB.getIndicators().filter(i => i.area === v).length;
+    const affected = DB.getActivities().filter(i => i.area === v).length;
     const text = affected > 0
-      ? `${affected} ${affected === 1 ? 'indicador queda reasignado' : 'indicadores quedan reasignados'} al área restante.`
+      ? `${affected} ${affected === 1 ? 'actividad queda reasignada' : 'actividades quedan reasignadas'} al área restante.`
       : '';
     showConfirm({
       title: `¿Eliminar "${v}"?`,
@@ -2499,7 +2511,7 @@ const ACTIONS = {
 function checkSetup() {
   const missing = [];
   if (DB.getAreas().length === 0)      missing.push({ name: 'Áreas', screen: 'config-areas' });
-  if (DB.getIndicators().length === 0) missing.push({ name: 'Indicadores', screen: 'config-indicators' });
+  if (DB.getActivities().length === 0) missing.push({ name: 'Actividades', screen: 'config-activities' });
   if (DB.getStudents().length === 0)   missing.push({ name: 'Alumnos', screen: 'config-students' });
   if (DB.getBimesters().length === 0)  missing.push({ name: 'Bimestres', screen: 'config-bimesters' });
   return missing;
@@ -2524,9 +2536,9 @@ function showSetupGuard(missing) {
  * ============================================================ */
 function startEvaluation() {
   const s = state.setup;
-  if (!s.area || !s.indicadorId || !s.bimestre) return;
-  const ind = DB.getIndicators().find(i => i.id === s.indicadorId);
-  if (!ind) { toast('Indicador no encontrado'); return; }
+  if (!s.area || !s.actividadId || !s.bimestre) return;
+  const ind = DB.getActivities().find(i => i.id === s.actividadId);
+  if (!ind) { toast('Actividad no encontrada'); return; }
   const students = DB.getStudentsInGroup(s.group);
   if (students.length === 0) {
     toast(s.group ? `Sin alumnos en "${s.group}"` : 'Cargá alumnos primero');
@@ -2535,8 +2547,8 @@ function startEvaluation() {
   const ev = DB.createEvaluation({
     area: s.area,
     bimestre: s.bimestre,
-    indicadorId: ind.id,
-    indicador: ind.text,
+    actividadId: ind.id,
+    actividad: ind.text,
     group: s.group || null,
     students,
   });
@@ -2704,7 +2716,7 @@ function exportCSV() {
         rec.alumno,
         DB.getStudentGroup(rec.alumno) || ev.group || '',
         ev.area || '',
-        ev.indicador || '',
+        ev.actividad || '',
         ev.bimestre || '',
         VAL_MAP[rec.valoracion]?.label || rec.valoracion,
         rec.nota != null ? rec.nota : '',
@@ -2717,7 +2729,7 @@ function exportCSV() {
   if (rows.length === 0) { toast('Sin datos para exportar'); return; }
 
   rows.sort((a, b) => a[0].localeCompare(b[0], 'es'));
-  const header = ['Alumno','Grupo','Área','Indicador','Bimestre','Valoración','Nota','Observación','Fecha'];
+  const header = ['Alumno','Grupo','Área','Actividad','Bimestre','Valoración','Nota','Observación','Fecha'];
   const csv = '﻿' + [header, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
