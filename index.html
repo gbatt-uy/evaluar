@@ -316,7 +316,8 @@
   /* ============================================================
    * MANAGE / CONFIG ITEMS
    * ============================================================ */
-  .manage-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; }
+  .manage-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px; }
+  .student-group-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='%23a8a29e'%3E%3Cpath d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 8px; }
   .manage-num { font-size: 12px; font-weight: 700; color: var(--text-mute); min-width: 22px; padding-top: 4px; }
   .manage-text { flex: 1; font-size: 14px; line-height: 1.4; min-width: 0; word-wrap: break-word; padding-top: 2px; }
   .manage-actions { display: flex; gap: 6px; flex-shrink: 0; }
@@ -578,6 +579,8 @@ const DB = {
     if (!Array.isArray(data.indicators) || data.indicators.length === 0) {
       data.indicators = DEFAULTS.INDICATORS.map(text => ({ id: generateId(), text, area: data.areas[0] }));
     }
+    if (!Array.isArray(data.groups)) data.groups = [];
+    if (!data.studentGroups || typeof data.studentGroups !== 'object') data.studentGroups = {};
     this._data = data;
     this._normalizeIndicators();
     return data;
@@ -629,6 +632,15 @@ const DB = {
       localStorage.setItem(CONFIG.STUDENTS_KEY, JSON.stringify(arr));
     } catch (e) {
       toast('No se pudo guardar alumnos: almacenamiento lleno');
+    }
+    // Drop group assignments for students that no longer exist
+    const data = this.load();
+    if (data.studentGroups) {
+      const set = new Set(arr);
+      Object.keys(data.studentGroups).forEach(name => {
+        if (!set.has(name)) delete data.studentGroups[name];
+      });
+      this.save();
     }
   },
 
@@ -744,11 +756,77 @@ const DB = {
     this.save();
   },
 
+  /* ---- Groups (classes) ---- */
+  getGroups() { return this.load().groups; },
+
+  addGroup(name) {
+    const v = name.trim();
+    if (!v) return false;
+    const data = this.load();
+    const norm = v.toLowerCase();
+    if (data.groups.some(g => g.toLowerCase() === norm)) return false;
+    data.groups.push(v);
+    this.save();
+    return true;
+  },
+
+  updateGroup(oldName, newName) {
+    const data = this.load();
+    const v = (newName || '').trim();
+    if (!v) return false;
+    const idx = data.groups.indexOf(oldName);
+    if (idx < 0) return false;
+    if (v === oldName) return true;
+    const norm = v.toLowerCase();
+    if (data.groups.some((g, i) => i !== idx && g.toLowerCase() === norm)) return false;
+    data.groups[idx] = v;
+    // Rewire student assignments
+    Object.keys(data.studentGroups).forEach(student => {
+      if (data.studentGroups[student] === oldName) data.studentGroups[student] = v;
+    });
+    this.save();
+    return true;
+  },
+
+  deleteGroup(name) {
+    const data = this.load();
+    data.groups = data.groups.filter(g => g !== name);
+    Object.keys(data.studentGroups).forEach(student => {
+      if (data.studentGroups[student] === name) delete data.studentGroups[student];
+    });
+    this.save();
+  },
+
+  getStudentGroup(student) {
+    const g = this.load().studentGroups[student];
+    if (!g) return null;
+    // Defensive: drop assignments to deleted groups
+    return this.load().groups.includes(g) ? g : null;
+  },
+
+  setStudentGroup(student, group) {
+    const data = this.load();
+    if (!group) {
+      delete data.studentGroups[student];
+    } else if (data.groups.includes(group)) {
+      data.studentGroups[student] = group;
+    }
+    this.save();
+  },
+
+  // Returns student names in the given group; if group is null/empty returns all students.
+  getStudentsInGroup(group) {
+    const students = this.getStudents();
+    if (!group) return students;
+    const data = this.load();
+    return students.filter(s => data.studentGroups[s] === group);
+  },
+
   /* ---- Evaluations ---- */
   getEvaluations() { return this.load().evaluations; },
   getEvaluation(id) { return this.getEvaluations().find(e => e.id === id) || null; },
 
-  createEvaluation({ area, bimestre, indicadorId, indicador, students }) {
+  createEvaluation({ area, bimestre, indicadorId, indicador, group = null, students }) {
     const evalu = {
       id: generateId(),
       date: new Date().toISOString(),
@@ -756,6 +834,7 @@ const DB = {
       bimestre,
       indicadorId,
       indicador,
+      group,
       records: students.map(name => ({ alumno: name, valoracion: null, nota: null, observacion: '' }))
     };
     this.load().evaluations.unshift(evalu);
@@ -786,7 +865,7 @@ const DB = {
 const state = {
   screen: 'home',
   backStack: [],
-  setup: { area: null, indicadorId: null, bimestre: null },
+  setup: { area: null, indicadorId: null, bimestre: null, group: null },
   currentEval: null,
   studentIdx: 0,
   evalMode: 'valoracion',   // 'valoracion' | 'nota'
@@ -794,6 +873,8 @@ const state = {
   indicatorEdit: { editingId: null, adding: false, draft: '', areaDraft: null },
   areaEdit: { editingName: null, draft: '' },
   bimesterEdit: { editingName: null, draft: '' },
+  groupEdit: { editingName: null, draft: '' },
+  studentsFilter: { group: '' },
   expandedStudent: null,
   modal: null,
 };
@@ -814,6 +895,7 @@ const SCREENS = {
   'config-indicators': renderConfigIndicators,
   'config-areas': renderConfigAreas,
   'config-bimesters': renderConfigBimesters,
+  'config-groups': renderConfigGroups,
 };
 
 function isSetupComplete() {
@@ -915,6 +997,7 @@ function renderHome() {
   const indicators = DB.getIndicators();
   const areas = DB.getAreas();
   const bimesters = DB.getBimesters();
+  const groups = DB.getGroups();
   return `
     ${renderTopbar()}
     <div class="home-hero">
@@ -967,6 +1050,13 @@ function renderHome() {
           <div class="home-link-body">
             <div class="home-link-title">Bimestres</div>
             <div class="home-link-meta">${bimesters.length} ${bimesters.length === 1 ? 'bimestre' : 'bimestres'}</div>
+          </div>
+          <span class="arrow">›</span>
+        </button>
+        <button class="home-link" data-action="config-groups" data-accent="green">
+          <div class="home-link-body">
+            <div class="home-link-title">Grupos</div>
+            <div class="home-link-meta">${groups.length === 0 ? 'Agrupá alumnos por clase' : `${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}`}</div>
           </div>
           <span class="arrow">›</span>
         </button>
@@ -1043,7 +1133,9 @@ function renderSetup() {
   // Areas where indicators exist — used to nudge the user when current area is empty
   const areasWithIndicators = areas.filter(a => allIndicators.some(i => i.area === a));
   const bimesters = DB.getBimesters();
-  const canStart = s.area && s.indicadorId && s.bimestre;
+  const groups = DB.getGroups();
+  const studentsInGroup = DB.getStudentsInGroup(s.group);
+  const canStart = s.area && s.indicadorId && s.bimestre && studentsInGroup.length > 0;
 
   return `
     ${renderTopbar({ back: true, title: 'Nueva evaluación' })}
@@ -1077,6 +1169,21 @@ function renderSetup() {
               </button>`).join('')}
           </div>`}
     </div>
+
+    ${groups.length > 0 ? `
+      <div class="mb-20">
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Grupo</span>
+          <span style="font-size:11px;font-weight:500;color:var(--text-mute);text-transform:none;letter-spacing:0">${studentsInGroup.length} ${studentsInGroup.length === 1 ? 'alumno' : 'alumnos'}</span>
+        </div>
+        <div class="area-pills">
+          <button class="area-pill ${s.group === null ? 'active' : ''}" data-action="set-group" data-value="__all__">Todos</button>
+          ${groups.map(g => `
+            <button class="area-pill ${s.group === g ? 'active' : ''}" data-action="set-group" data-value="${esc(g)}">${esc(g)}</button>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
 
     <div class="mb-20" style="flex:1; min-height:0; display:flex; flex-direction:column;">
       <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
@@ -1145,7 +1252,7 @@ function renderEvaluation() {
   return `
     ${renderTopbar({
       back: true,
-      title: `${esc(ev.area)} · ${esc(ev.bimestre)}`,
+      title: `${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}`,
       right: `<button class="topbar-action" data-action="goto-summary">Resumen</button>`
     })}
 
@@ -1241,7 +1348,7 @@ function renderSummaryView(ev, isHistory) {
       title: isHistory ? 'Detalle' : 'Resumen',
       right: !isHistory ? `<button class="topbar-action neutral" data-action="goto-home">Inicio</button>` : ''
     })}
-    <div class="indicator-pill">${esc(ev.area)} · ${esc(ev.bimestre)}</div>
+    <div class="indicator-pill">${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
     <div class="h3" style="margin-bottom:4px">${esc(ev.indicador)}</div>
     <div class="summary-meta">${formatDate(ev.date)}</div>
 
@@ -1385,7 +1492,7 @@ function renderHistoryItem(ev) {
   const completed = ev.records.filter(r => r.valoracion).length;
   return `
     <button class="history-item" data-action="open-eval" data-id="${esc(ev.id)}">
-      <div class="history-date">${formatDate(ev.date)} · ${esc(ev.area)} · ${esc(ev.bimestre)}</div>
+      <div class="history-date">${formatDate(ev.date)} · ${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
       <div class="history-indicator">${esc(ev.indicador)}</div>
       <div class="history-stats">
         <span class="history-stat" style="color:var(--text-mute)">${completed}/${ev.records.length}</span>
@@ -1398,7 +1505,10 @@ function renderHistoryItem(ev) {
  * UI — Students view (with colored dots per indicator)
  * ============================================================ */
 function renderStudentsView() {
-  const students = DB.getStudents();
+  const allStudents = DB.getStudents();
+  const groups = DB.getGroups();
+  const filterGroup = state.studentsFilter.group;
+  const students = filterGroup ? allStudents.filter(s => DB.getStudentGroup(s) === filterGroup) : allStudents;
   const indicators = DB.getIndicators();
   const allEvals = DB.getEvaluations();
 
@@ -1427,6 +1537,15 @@ function renderStudentsView() {
     })}
     <div class="h2 mb-16">Desempeño</div>
 
+    ${groups.length > 0 ? `
+      <div class="area-pills" style="margin-bottom:12px">
+        <button class="area-pill ${!filterGroup ? 'active' : ''}" data-action="filter-students-group-pill" data-value="">Todos</button>
+        ${groups.map(g => `
+          <button class="area-pill ${filterGroup === g ? 'active' : ''}" data-action="filter-students-group-pill" data-value="${esc(g)}">${esc(g)}</button>
+        `).join('')}
+      </div>
+    ` : ''}
+
     <div class="legend">
       <span class="legend-item"><span class="dot logrado"></span>Logrado</span>
       <span class="legend-item"><span class="dot proceso"></span>En proceso</span>
@@ -1434,7 +1553,7 @@ function renderStudentsView() {
     </div>
 
     ${students.length === 0
-      ? renderEmpty('👤', 'Sin alumnos', 'Cargá alumnos desde Configurar.')
+      ? renderEmpty('👤', filterGroup ? `Sin alumnos en "${filterGroup}"` : 'Sin alumnos', filterGroup ? 'Asigná alumnos a este grupo o elegí otro.' : 'Cargá alumnos desde Configurar.')
       : indicators.length === 0
         ? renderEmpty('📋', 'Sin indicadores', 'Creá indicadores para empezar a evaluar.')
         : `<div class="students-list">
@@ -1485,11 +1604,13 @@ function renderStudentRow(student, indicators, latestForStudent) {
  * ============================================================ */
 function renderConfigStudents() {
   const students = DB.getStudents();
+  const groups = DB.getGroups();
+  const hasGroups = groups.length > 0;
   return `
     ${renderTopbar({ back: true, title: 'Alumnos' })}
     <div class="mb-20">
       <div class="h2">Gestionar alumnos</div>
-      <p class="lead">${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'} en tu lista</p>
+      <p class="lead">${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'} en tu lista${hasGroups ? ` · ${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}` : ''}</p>
     </div>
 
     <div class="card mb-16">
@@ -1505,20 +1626,33 @@ function renderConfigStudents() {
     ${students.length > 0 ? `
       <div class="section-label">Lista actual (${students.length})</div>
       <div class="stack-tight">
-        ${students.map(s => `
-          <div class="manage-item">
-            <div class="manage-text">${esc(s)}</div>
-            <div class="manage-actions">
-              <button class="icon-btn danger" data-action="remove-student" data-value="${esc(s)}" aria-label="Quitar">×</button>
-            </div>
-          </div>
-        `).join('')}
+        ${students.map(s => renderStudentManageItem(s, groups, hasGroups)).join('')}
       </div>
+      ${!hasGroups ? `
+        <button class="btn btn-ghost" data-action="config-groups" style="margin-top:12px;font-size:13px;color:var(--primary)">+ Crear grupos para organizar alumnos</button>
+      ` : ''}
     ` : `
       ${renderEmpty('👤', 'Sin alumnos', 'Pegá una lista para comenzar.')}
       <button class="btn btn-ghost" data-action="reset-students" style="margin-top:8px;font-size:13px">Usar lista de ejemplo</button>
     `}
   `;
+}
+
+function renderStudentManageItem(name, groups, hasGroups) {
+  const currentGroup = DB.getStudentGroup(name) || '';
+  return `
+    <div class="manage-item" style="align-items:center">
+      <div class="manage-text">${esc(name)}</div>
+      ${hasGroups ? `
+        <select class="input student-group-select" data-action="set-student-group" data-student="${esc(name)}" style="min-height:38px;padding:6px 28px 6px 10px;font-size:13px;width:auto;max-width:130px;flex-shrink:0">
+          <option value="">Sin grupo</option>
+          ${groups.map(g => `<option value="${esc(g)}" ${currentGroup === g ? 'selected' : ''}>${esc(g)}</option>`).join('')}
+        </select>
+      ` : ''}
+      <div class="manage-actions">
+        <button class="icon-btn danger" data-action="remove-student" data-value="${esc(name)}" aria-label="Quitar">×</button>
+      </div>
+    </div>`;
 }
 
 /* ============================================================
@@ -1699,6 +1833,62 @@ function renderConfigBimesters() {
   `;
 }
 
+/* ============================================================
+ * UI — Config: Groups (classes)
+ * ============================================================ */
+function renderConfigGroups() {
+  const groups = DB.getGroups();
+  const editState = state.groupEdit;
+  const students = DB.getStudents();
+  const data = DB._data;
+
+  return `
+    ${renderTopbar({ back: true, title: 'Grupos' })}
+    <div class="mb-20">
+      <div class="h2">Grupos</div>
+      <p class="lead">Agrupá alumnos por clase, curso o división.</p>
+    </div>
+
+    <form class="inline-add" id="add-group-form" novalidate>
+      <input class="input" id="new-group-input" placeholder="Ej: 1ro A" autocomplete="off">
+      <button type="submit" class="btn btn-primary">+</button>
+    </form>
+
+    ${groups.length === 0
+      ? renderEmpty('👥', 'Sin grupos', 'Agregá uno para organizar tus alumnos.')
+      : `<div class="stack-tight">
+          ${groups.map(g => renderGroupItem(g, editState, students, data)).join('')}
+        </div>`}
+  `;
+}
+
+function renderGroupItem(name, editState, students, data) {
+  if (editState.editingName === name) {
+    return `
+      <div class="manage-item">
+        <div class="manage-edit">
+          <input class="input" id="edit-group-input" value="${esc(editState.draft)}" autocomplete="off">
+          <div class="manage-edit-actions">
+            <button class="btn btn-secondary" data-action="cancel-group-edit">Cancelar</button>
+            <button class="btn btn-primary" data-action="save-group-edit" data-value="${esc(name)}">Guardar</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  const count = students.filter(s => data.studentGroups[s] === name).length;
+  return `
+    <div class="manage-item">
+      <div class="manage-text">
+        ${esc(name)}
+        <div class="muted" style="font-size:12px;margin-top:2px">${count} ${count === 1 ? 'alumno' : 'alumnos'}</div>
+      </div>
+      <div class="manage-actions">
+        <button class="icon-btn" data-action="start-group-edit" data-value="${esc(name)}" aria-label="Editar">✎</button>
+        <button class="icon-btn danger" data-action="delete-group" data-value="${esc(name)}" aria-label="Eliminar">×</button>
+      </div>
+    </div>`;
+}
+
 function renderBimesterItem(name, editState) {
   if (editState.editingName === name) {
     return `
@@ -1728,7 +1918,7 @@ function renderBimesterItem(name, editState) {
 function attachHandlers() {
   document.querySelectorAll('[data-action]').forEach(el => {
     if (el.tagName === 'SELECT') {
-      el.addEventListener('change', onFilterChange);
+      el.addEventListener('change', onSelectChange);
     } else {
       el.addEventListener('click', onAction);
     }
@@ -1759,6 +1949,8 @@ function attachHandlers() {
   if (areaForm) areaForm.addEventListener('submit', onAddArea);
   const bimForm = $('add-bimester-form');
   if (bimForm) bimForm.addEventListener('submit', onAddBimester);
+  const groupForm = $('add-group-form');
+  if (groupForm) groupForm.addEventListener('submit', onAddGroup);
 
   const editArea = $('edit-area-input');
   if (editArea) {
@@ -1769,6 +1961,11 @@ function attachHandlers() {
   if (editBim) {
     editBim.addEventListener('input', e => { state.bimesterEdit.draft = e.target.value; });
     setTimeout(() => { editBim.focus(); editBim.setSelectionRange(editBim.value.length, editBim.value.length); }, 50);
+  }
+  const editGroup = $('edit-group-input');
+  if (editGroup) {
+    editGroup.addEventListener('input', e => { state.groupEdit.draft = e.target.value; });
+    setTimeout(() => { editGroup.focus(); editGroup.setSelectionRange(editGroup.value.length, editGroup.value.length); }, 50);
   }
 }
 
@@ -1781,15 +1978,21 @@ function onAction(e) {
   if (handler) handler(value, el);
 }
 
-function onFilterChange(e) {
+function onSelectChange(e) {
   const el = e.currentTarget;
   const action = el.dataset.action;
   const value = el.value;
-  if (action === 'filter-student')   state.filter.student = value;
-  if (action === 'filter-indicador') state.filter.indicadorId = value;
-  if (action === 'filter-area')      state.filter.area = value;
-  if (action === 'filter-bimestre')  state.filter.bimestre = value;
-  render();
+
+  // History page filters: mutate the filter and re-render.
+  if (action === 'filter-student')   { state.filter.student = value;     render(); return; }
+  if (action === 'filter-indicador') { state.filter.indicadorId = value; render(); return; }
+  if (action === 'filter-area')      { state.filter.area = value;        render(); return; }
+  if (action === 'filter-bimestre')  { state.filter.bimestre = value;    render(); return; }
+
+  // Otherwise dispatch via the regular action map (lets selects share
+  // handlers with buttons; handlers decide whether to re-render).
+  const handler = ACTIONS[action];
+  if (handler) handler(value, el);
 }
 
 /* Action handler map — kept compact so the dispatch above stays simple */
@@ -1812,6 +2015,7 @@ const ACTIONS = {
       area: areas[0] || null,
       indicadorId: null,
       bimestre: currentBimestreLabel(bims),
+      group: null,
     };
     showScreen('setup');
   },
@@ -1833,6 +2037,7 @@ const ACTIONS = {
   },
   'config-areas':       () => showScreen('config-areas'),
   'config-bimesters':   () => showScreen('config-bimesters'),
+  'config-groups':      () => showScreen('config-groups'),
 
   'set-area':       (v) => {
     if (state.setup.area !== v) state.setup.indicadorId = null;
@@ -1841,6 +2046,7 @@ const ACTIONS = {
   },
   'set-bimestre':   (v) => { state.setup.bimestre = v; render(); },
   'set-indicador':  (v) => { state.setup.indicadorId = v; render(); },
+  'set-group':      (v) => { state.setup.group = (v === '__all__' ? null : v); render(); },
   'start-eval':     () => startEvaluation(),
 
   'set-mode':  (v) => { state.evalMode = v; render(); },
@@ -1966,6 +2172,50 @@ const ACTIONS = {
     render();
   },
 
+  'start-group-edit': (v) => {
+    state.groupEdit = { editingName: v, draft: v };
+    render();
+  },
+  'cancel-group-edit': () => {
+    state.groupEdit = { editingName: null, draft: '' };
+    render();
+  },
+  'save-group-edit': (v) => {
+    const next = (state.groupEdit.draft || '').trim();
+    if (!next) { toast('No puede quedar vacío'); return; }
+    const ok = DB.updateGroup(v, next);
+    if (!ok) { toast('Ese nombre ya existe'); return; }
+    state.groupEdit = { editingName: null, draft: '' };
+    toast('Grupo actualizado');
+    render();
+  },
+  'delete-group': (v) => {
+    const count = DB.getStudents().filter(s => DB.getStudentGroup(s) === v).length;
+    const text = count > 0
+      ? `${count} ${count === 1 ? 'alumno queda sin grupo asignado' : 'alumnos quedan sin grupo asignado'}.`
+      : '';
+    showConfirm({
+      title: `¿Eliminar grupo "${v}"?`,
+      text,
+      onConfirm: () => {
+        DB.deleteGroup(v);
+        toast('Grupo eliminado');
+        render();
+      }
+    });
+  },
+  'set-student-group': (_, el) => {
+    const student = el.dataset.student;
+    const group = el.value || null;
+    DB.setStudentGroup(student, group);
+    // No re-render — the select already shows the new value, full render
+    // would lose textarea focus on bulk-input.
+  },
+  'filter-students-group-pill': (v) => {
+    state.studentsFilter.group = v || '';
+    render();
+  },
+
   'remove-student': (v) => {
     showConfirm({
       title: `¿Quitar a "${v}"?`,
@@ -2083,13 +2333,17 @@ function startEvaluation() {
   if (!s.area || !s.indicadorId || !s.bimestre) return;
   const ind = DB.getIndicators().find(i => i.id === s.indicadorId);
   if (!ind) { toast('Indicador no encontrado'); return; }
-  const students = DB.getStudents();
-  if (students.length === 0) { toast('Cargá alumnos primero'); return; }
+  const students = DB.getStudentsInGroup(s.group);
+  if (students.length === 0) {
+    toast(s.group ? `Sin alumnos en "${s.group}"` : 'Cargá alumnos primero');
+    return;
+  }
   const ev = DB.createEvaluation({
     area: s.area,
     bimestre: s.bimestre,
     indicadorId: ind.id,
     indicador: ind.text,
+    group: s.group || null,
     students,
   });
   state.currentEval = ev;
@@ -2222,6 +2476,17 @@ function onAddBimester(e) {
   render();
 }
 
+function onAddGroup(e) {
+  e.preventDefault();
+  const input = $('new-group-input');
+  if (!input) return;
+  const v = input.value.trim();
+  if (!v) { toast('Escribí un nombre'); return; }
+  if (!DB.addGroup(v)) { toast('Ese grupo ya existe'); return; }
+  toast('Grupo agregado');
+  render();
+}
+
 /* ============================================================
  * CSV EXPORT
  * ============================================================ */
@@ -2243,6 +2508,7 @@ function exportCSV() {
       if (f.student && rec.alumno !== f.student) return;
       rows.push([
         rec.alumno,
+        DB.getStudentGroup(rec.alumno) || ev.group || '',
         ev.area || '',
         ev.indicador || '',
         ev.bimestre || '',
@@ -2257,7 +2523,7 @@ function exportCSV() {
   if (rows.length === 0) { toast('Sin datos para exportar'); return; }
 
   rows.sort((a, b) => a[0].localeCompare(b[0], 'es'));
-  const header = ['Alumno','Área','Indicador','Bimestre','Valoración','Nota','Observación','Fecha'];
+  const header = ['Alumno','Grupo','Área','Indicador','Bimestre','Valoración','Nota','Observación','Fecha'];
   const csv = '﻿' + [header, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
