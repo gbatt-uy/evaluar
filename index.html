@@ -1345,8 +1345,7 @@ function renderSummaryView(ev, isHistory) {
   return `
     ${renderTopbar({
       back: true,
-      title: isHistory ? 'Detalle' : 'Resumen',
-      right: !isHistory ? `<button class="topbar-action neutral" data-action="goto-home">Inicio</button>` : ''
+      title: isHistory ? 'Detalle' : 'Resumen'
     })}
     <div class="indicator-pill">${esc(ev.area)} · ${esc(ev.bimestre)}${ev.group ? ` · ${esc(ev.group)}` : ''}</div>
     <div class="h3" style="margin-bottom:4px">${esc(ev.indicador)}</div>
