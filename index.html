@@ -573,10 +573,28 @@ const DB = {
     if (!Array.isArray(data.indicators) || data.indicators.length === 0) {
       data.indicators = DEFAULTS.INDICATORS.map(text => ({ id: generateId(), text, area: data.areas[0] }));
     }
-    // Backfill: assign first area to any indicator missing one
-    data.indicators.forEach(ind => { if (!ind.area) ind.area = data.areas[0]; });
     this._data = data;
+    this._normalizeIndicators();
     return data;
+  },
+
+  // Reassign orphan indicators (missing area or area no longer in list) to first area.
+  // Runs on every getIndicators() call so newly-added areas or renamed areas reconcile
+  // indicators created in edge cases (e.g. before any area existed).
+  _normalizeIndicators() {
+    const data = this._data;
+    if (!data || !Array.isArray(data.areas) || data.areas.length === 0) return;
+    const valid = new Set(data.areas);
+    let changed = false;
+    data.indicators.forEach(ind => {
+      if (!ind.area || !valid.has(ind.area)) {
+        ind.area = data.areas[0];
+        changed = true;
+      }
+    });
+    if (changed) {
+      try { localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    }
   },
 
   save() {
@@ -610,12 +628,21 @@ const DB = {
   },
 
   /* ---- Indicators ---- */
-  getIndicators() { return this.load().indicators; },
-  getIndicatorsByArea(area) { return this.load().indicators.filter(i => i.area === area); },
+  getIndicators() {
+    const data = this.load();
+    this._normalizeIndicators();
+    return data.indicators;
+  },
+  getIndicatorsByArea(area) {
+    return this.getIndicators().filter(i => i.area === area);
+  },
 
   addIndicator(text, area) {
-    const ind = { id: generateId(), text: text.trim(), area: area || this.load().areas[0] };
-    this.load().indicators.push(ind);
+    const data = this.load();
+    const resolvedArea = area || data.areas[0];
+    if (!resolvedArea) return null;
+    const ind = { id: generateId(), text: text.trim(), area: resolvedArea };
+    data.indicators.push(ind);
     this.save();
     return ind;
   },
@@ -994,7 +1021,10 @@ function renderSetupInit() {
 function renderSetup() {
   const s = state.setup;
   const areas = DB.getAreas();
-  const indicators = s.area ? DB.getIndicatorsByArea(s.area) : [];
+  const allIndicators = DB.getIndicators();
+  const indicators = s.area ? allIndicators.filter(i => i.area === s.area) : [];
+  // Areas where indicators exist — used to nudge the user when current area is empty
+  const areasWithIndicators = areas.filter(a => allIndicators.some(i => i.area === a));
   const bimesters = DB.getBimesters();
   const canStart = s.area && s.indicadorId && s.bimestre;
 
@@ -1039,7 +1069,7 @@ function renderSetup() {
       ${!s.area
         ? renderEmpty('📋', 'Elegí un área', 'Primero seleccioná un área arriba.')
         : indicators.length === 0
-          ? renderEmpty('📋', 'Sin indicadores', `No hay indicadores cargados para ${esc(s.area)}. Creá uno desde "Gestionar".`)
+          ? renderIndicatorEmpty(s.area, areasWithIndicators)
           : `<div class="indicator-scroll">
               ${indicators.map((ind, i) => `
                 <button class="choice-item ${s.indicadorId === ind.id ? 'active' : ''}" data-action="set-indicador" data-value="${esc(ind.id)}">
@@ -1055,6 +1085,30 @@ function renderSetup() {
       Comenzar evaluación
     </button>
   `;
+}
+
+function renderIndicatorEmpty(currentArea, areasWithIndicators) {
+  const others = areasWithIndicators.filter(a => a !== currentArea);
+  return `
+    <div class="empty">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">Sin indicadores en ${esc(currentArea)}</div>
+      <div class="empty-text">No hay indicadores cargados para esta área.</div>
+      ${others.length > 0 ? `
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+          ${others.map(a => `
+            <button class="area-pill" data-action="set-area" data-value="${esc(a)}">
+              Ver de ${esc(a)}
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
+      <div style="margin-top:14px">
+        <button class="btn btn-secondary" data-action="config-indicators" style="font-size:14px;min-height:44px">
+          + Crear indicador
+        </button>
+      </div>
+    </div>`;
 }
 
 /* ============================================================
@@ -1830,6 +1884,7 @@ const ACTIONS = {
     const text = (state.indicatorEdit.draft || '').trim();
     if (!text) { toast('Escribí el indicador'); return; }
     const area = state.indicatorEdit.areaDraft || DB.getAreas()[0];
+    if (!area) { toast('Creá un área primero'); return; }
     DB.addIndicator(text, area);
     state.indicatorEdit = { editingId: null, adding: false, draft: '', areaDraft: null };
     toast('Indicador creado');
