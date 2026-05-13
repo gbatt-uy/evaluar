@@ -1281,7 +1281,6 @@ function renderSummaryView(ev, isHistory) {
     <div class="stack-tight" style="margin-top:24px">
       ${!isHistory ? `<button class="btn btn-primary" data-action="continue-eval">Volver a evaluación</button>` : ''}
       ${!isHistory ? `<button class="btn btn-secondary" data-action="eval-another">Evaluar otro indicador</button>` : ''}
-      ${!isHistory ? `<button class="btn btn-secondary" data-action="goto-home">Ir al inicio</button>` : ''}
       ${isHistory ? `<button class="btn btn-danger" data-action="delete-eval">Eliminar evaluación</button>` : ''}
     </div>
   `;
@@ -1499,9 +1498,10 @@ function renderConfigStudents() {
           </div>
         `).join('')}
       </div>
-    ` : renderEmpty('👤', 'Sin alumnos', 'Pegá una lista para comenzar.')}
-
-    <button class="btn btn-ghost" data-action="reset-students" style="margin-top:16px;font-size:13px">Restaurar lista de ejemplo</button>
+    ` : `
+      ${renderEmpty('👤', 'Sin alumnos', 'Pegá una lista para comenzar.')}
+      <button class="btn btn-ghost" data-action="reset-students" style="margin-top:8px;font-size:13px">Usar lista de ejemplo</button>
+    `}
   `;
 }
 
