@@ -1407,7 +1407,7 @@ function renderStudentsView() {
     ${renderTopbar({
       back: true,
       title: 'Alumnos',
-      right: `<button class="topbar-action" data-action="config-students">Importar lista</button>`
+      right: `<button class="topbar-action" data-action="config-students">Gestionar</button>`
     })}
     <div class="h2 mb-16">Desempeño</div>
 
@@ -1472,17 +1472,17 @@ function renderConfigStudents() {
   return `
     ${renderTopbar({ back: true, title: 'Alumnos' })}
     <div class="mb-20">
-      <div class="h2">Cargar alumnos</div>
+      <div class="h2">Gestionar alumnos</div>
       <p class="lead">${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'} en tu lista</p>
     </div>
 
     <div class="card mb-16">
-      <div class="section-label">Pegá la lista</div>
+      <div class="section-label">Pegá una lista o agregá uno por uno</div>
       <p class="muted" style="margin-bottom:10px;line-height:1.45">Un alumno por línea (Nombre Apellido).</p>
       <textarea class="input" id="bulk-input" rows="6" placeholder="Sofía Martínez&#10;Tomás García&#10;Valentina López..."></textarea>
       <div class="stack-tight" style="margin-top:12px">
-        <button class="btn btn-primary" data-action="bulk-replace">Reemplazar lista</button>
-        <button class="btn btn-secondary" data-action="bulk-add">Agregar a lista</button>
+        <button class="btn btn-primary" data-action="bulk-add">Agregar a lista</button>
+        <button class="btn btn-secondary" data-action="bulk-replace">Reemplazar lista</button>
       </div>
     </div>
 
